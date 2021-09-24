@@ -1,0 +1,68 @@
+{
+  "query": {
+    "type": "group",
+    "logical_operator": "and",
+    "nodes": [
+      {
+        "type": "terminal",
+        "service": "text",
+        "parameters": {
+          "attribute": "entity_poly.rcsb_entity_polymer_type",
+          "operator": "exact_match",
+          "value": "Protein"
+        }
+      },
+      {
+        "type": "terminal",
+        "service": "text",
+        "parameters": {
+          "attribute": "rcsb_accession_info.initial_release_date",
+          "operator": "range",
+          "value": {
+              "from": "2018-05-01",
+              "to": "2021-08-31"
+          }
+        }
+      },
+      {
+        "type": "terminal",
+        "service": "text",
+        "parameters": {
+          "negation": true,
+          "operator": "in",
+          "value": [
+              "SOLID-STATE NMR",
+              "SOLUTION NMR"
+          ],
+          "attribute": "exptl.method"
+        }
+      },
+      {
+        "type": "terminal",
+        "service": "text",
+        "parameters": {
+          "operator": "less_or_equal",
+          "value": 2.5,
+          "attribute": "rcsb_entry_info.resolution_combined"
+        }
+      }
+    ]
+  },
+  "request_options": {
+    "return_all_hits": true,
+    "facets": [
+    {
+        "aggregation_type": "terms",
+        "attribute": "exptl.method"
+    }
+    ],
+    "return_service_metadata": false,
+    "sort": [
+    {
+        "sort_by": "rcsb_entry_info.resolution_combined",
+        "direction": "asc"
+    }
+    ]
+  },
+  "return_type": "entry"
+}
