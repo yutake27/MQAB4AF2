@@ -25,7 +25,7 @@ def main():
         res_json = SearchAPI.get(query)
         entry_list = SearchAPI.parseJson(res_json)
         print(entry_list)
-        with open('../../data/interim/extracted_entry.pkl', 'wb') as f:
+        with open('../../../data/interim/extracted_entry.pkl', 'wb') as f:
             pickle.dump(entry_list, f)
 
 

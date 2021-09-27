@@ -2,7 +2,7 @@ import pickle
 
 
 class Cluster:
-    bc40 = '../../data/raw/bc-40.out'
+    bc40 = '../../../data/raw/bc-40.out'
 
     def __init__(self):
         cluster_list = []
@@ -24,7 +24,7 @@ class Cluster:
 
 
 def main():
-    with open('../../data/interim/extracted_entry.pkl', 'rb') as f:
+    with open('../../../data/interim/extracted_entry.pkl', 'rb') as f:
         entry_list = pickle.load(f)
         entry_set = set(entry_list)
         cluster = Cluster()
