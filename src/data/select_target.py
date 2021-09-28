@@ -10,7 +10,7 @@ import pandas as pd
 import requests
 from tqdm import tqdm
 
-data_dir = Path('../../../data')
+data_dir = Path('../../data')
 
 
 def now():
