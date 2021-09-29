@@ -1,6 +1,4 @@
 """Read the csv of the list of targets and submit a job to run Alphafold on each target.
-ターゲットのfasta配列及び，出力先ディレクトリを作成する必要がある．
-また今後に備えて出力をまとめるディレクトリに名前を付けれられるようにした方が良い．
 """
 
 import subprocess
