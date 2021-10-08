@@ -56,7 +56,7 @@
         "attribute": "exptl.method"
     }
     ],
-    "return_service_metadata": false,
+    "results_verbosity": "compact",
     "sort": [
     {
         "sort_by": "rcsb_entry_info.resolution_combined",

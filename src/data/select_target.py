@@ -31,9 +31,7 @@ class SearchAPI:
     @classmethod
     def get_entries(cls, query: json):
         res_json = cls.get(query)
-        entry_list = []
-        for ent in res_json['result_set']:
-            entry_list.append(ent['identifier'])
+        entry_list = res_json['result_set']
         return entry_list
 
 
