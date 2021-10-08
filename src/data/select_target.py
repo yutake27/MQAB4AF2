@@ -2,6 +2,7 @@
     Select targets from pdb entries
 """
 import datetime
+import inspect
 import json
 from pathlib import Path
 
@@ -117,6 +118,38 @@ class SearchSequence:
         return header, sequence
 
 
+class CheckSequence:
+    @classmethod
+    def check_sequence(cls, sequence: str) -> bool:
+        for method_name, func in inspect.getmembers(cls):
+            if method_name.startswith('_check') and not func(sequence):
+                return False
+        return True
+
+    @staticmethod
+    def _check_sequence_length(sequence) -> bool:
+        if len(sequence) < 80:  # min (determined from AF2 paper)
+            return False
+        elif len(sequence) > 700:  # max (determined from the sequence length distribution)
+            return False
+        else:
+            return True
+
+    @staticmethod
+    def _check_sequence_character(sequence) -> bool:
+        set_sequence_character = set(list(sequence))
+        # check character number
+        if len(set_sequence_character) < 5:
+            return False
+        # check all amino acids are standard amino acid
+        standard_amino_acids = ('A', 'R', 'N', 'D', 'C', 'E', 'Q', 'G', 'H', 'I',
+                                'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V')
+        for amino_acid in set_sequence_character:
+            if amino_acid not in standard_amino_acids:
+                return False
+        return True
+
+
 class Entry:
     """A class that stores information about an entry
     and determines if it is a suitable for a target.
@@ -133,20 +166,7 @@ class Entry:
         self.num_entry_in_cluster = num_entry_in_cluster
 
     def _check_sequence(self) -> bool:
-        def check_sequence_length() -> bool:
-            if len(self.sequence) < 80:  # minimum
-                return False
-            elif len(self.sequence) > 700:  # maximum
-                return False
-            else:
-                return True
-
-        def check_sequence_character() -> bool:
-            if len(set(list(self.sequence))) < 5:
-                return False
-            else:
-                return True
-        return check_sequence_length() and check_sequence_character()
+        return CheckSequence.check_sequence(self.sequence)
 
     def _check_resolution(self):
         pass
