@@ -9,12 +9,13 @@ import datetime
 data_dir = Path('../../data/')
 
 
-def throw_job(fasta_path: str, output_dir: str, max_template_date: str, time: str, qsub=False):
+def throw_job(fasta_path: Path, output_dir: Path, max_template_date: str, time: str, qsub=False):
     cmd = ['./alphafold.sh', str(fasta_path), str(output_dir), str(max_template_date)]
     if not qsub:
         print(' '.join(cmd))
     if qsub:
-        cmd = ['qsub', '-g', 'tga-ishidalab', '-l', 'h_rt={}'.format(time)] + cmd
+        cmd = ['qsub', '-g', 'tga-ishidalab',
+               '-l', 'h_rt={}'.format(time), '-N', 'af_' + fasta_path.stem] + cmd
         subprocess.run(cmd)
 
 
@@ -45,16 +46,17 @@ def run_alphafold(row: pd.Series, fasta_dir: Path, pdb_dir: Path):
     # time = estimate_time_from_length(length)
     fasta_path = make_fasta(entry_id, header, seq, fasta_dir)
     assert fasta_path is not None
-    time = '4:00:00'
+    time = '12:00:00'
     throw_job(fasta_path, pdb_dir, max_template_date, time)
 
 
 def make_output_dir(output_dir_name: str) -> (Path, Path):
     # Structure of output dir.
-    # └── test
+    # out
+    # └── output_dir_name
     #     ├── fasta
     #     └── pdb
-    output_dir = data_dir / output_dir_name
+    output_dir = data_dir / 'out' / output_dir_name
     output_dir.mkdir(parents=True, exist_ok=True)
     output_fasta_dir = output_dir / 'fasta'
     output_fasta_dir.mkdir(exist_ok=True)
