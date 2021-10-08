@@ -136,7 +136,7 @@ class Entry:
         def check_sequence_length() -> bool:
             if len(self.sequence) < 80:  # minimum
                 return False
-            elif len(self.sequence) > 1400:  # maximum
+            elif len(self.sequence) > 700:  # maximum
                 return False
             else:
                 return True
