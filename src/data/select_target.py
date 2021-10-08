@@ -156,7 +156,20 @@ class Entry:
     """
 
     def __init__(self, id: str, resolution: float, releasedate: str,
-                 header: str, sequence: str, num_entry_in_cluster: int):
+                 header: str, sequence: str, num_entry_in_cluster: int,
+                 num_entry_in_cluster_AF2_notInclude: int):
+        """Init
+
+        Args:
+            id (str): entry id. pdb_id(upper case) + '_' + chain_name.
+            resolution (float): resolution.
+            releasedate (str): Initial release date of entry.
+            header (str): Header of fasta sequence.
+            sequence (str): Amino acid sequence.
+            num_entry_in_cluster (int): Number of entries in the cluster clustered by sequence identity 40%.
+            num_entry_in_cluster_AF2_notInclude (int):
+            Number of entries in the cluster that are not included in AF2 training (After 2018-05-01).
+        """
         self.id = id
         self.resolution = resolution
         self.releasedate = releasedate
@@ -164,6 +177,9 @@ class Entry:
         self.sequence = sequence
         self.length = len(sequence)
         self.num_entry_in_cluster = num_entry_in_cluster
+        self.num_entry_in_cluster_AF2_notInclude = num_entry_in_cluster_AF2_notInclude
+        # Whether similar sequences are included in the training data of AF2
+        self.is_similar_AF2 = num_entry_in_cluster != num_entry_in_cluster_AF2_notInclude
 
     def _check_sequence(self) -> bool:
         return CheckSequence.check_sequence(self.sequence)
@@ -255,7 +271,7 @@ class Cluster:
         for index in indices:
             entry_id, resolution, releasedate = entries[index], resolutions[index], releasedates[index]
             header, sequence = self.ss.search_sequence(entry_id)
-            entry = Entry(entry_id, resolution, releasedate, header, sequence, num_entry_in_cluster)
+            entry = Entry(entry_id, resolution, releasedate, header, sequence, num_entry_in_cluster, len(entries))
             if entry.check_entry():
                 return entry.get_all_attribute()
         return None
