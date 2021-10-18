@@ -1,3 +1,0 @@
-[submodule "src/alphafold/alphafold"]
-	path = src/alphafold/alphafold
-	url = https://github.com/deepmind/alphafold.git
