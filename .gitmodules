@@ -1,3 +1,6 @@
 [submodule "src/alphafold/localcolabfold"]
 	path = src/alphafold/localcolabfold
 	url = https://github.com/yutake27/localcolabfold
+[submodule "src/alphafold/colabfold"]
+	path = src/alphafold/colabfold
+	url = https://github.com/yutake27/ColabFold
