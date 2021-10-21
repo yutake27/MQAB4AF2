@@ -4,3 +4,6 @@
 [submodule "src/alphafold/colabfold"]
 	path = src/alphafold/colabfold
 	url = https://github.com/yutake27/ColabFold
+[submodule "src/alphafold/alphafold"]
+	path = src/alphafold/alphafold
+	url = https://github.com/yutake27/alphafold
