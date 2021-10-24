@@ -1,4 +1,124 @@
 # Alphafold
+
+Use localcolabfold (https://github.com/YoshitakaMo/localcolabfold) to run colabfold (https://github.com/sokrypton/ColabFold) locally.
+
+Runtime environment was created by updating  original AlphaFold (https://github.com/deepmind/alphafold) with colabfold and localcolabfold patches.
+
+## Setup
+To create execution environment, run following command.
+
+```bash
+cd alphafold # (./src/alphafold/alphafold)
+bash install.sh
+```
+
+The miniconda environment for running alphafold is created ( without affecting the current conda environment), model parameters are downloaded, and so on.
+
+
 ## Run
-using alphafold non-docker
-https://github.com/kalininalab/alphafold_non_docker
+```bash
+cd alphafold # (./src/alphafold/alphafold)
+colabfold-conda/bin/python3.7 runner_af2advanced.py --input hoge.fasta --output_dir hoge --max-recycle n
+```
+
+```bash
+$ colabfold-conda/bin/python3.7 runner_af2advanced.py --help
+usage: runner_af2advanced.py [-h] -i INPUT [-o OUTPUT_DIR] [-ho HOMOOLIGOMER]
+                             [-m {mmseqs2,single_sequence,precomputed}]
+                             [--precomputed PRECOMPUTED]
+                             [-p {unpaired,unpaired+paired,paired}]
+                             [-pc PAIR_COV] [-pq PAIR_QID]
+                             [-b {pLDDT,pTMscore}] [-t] [-mm MAX_MSA]
+                             [--num_CASP14_models NUM_CASP14_MODELS]
+                             [--num_pTM_models NUM_PTM_MODELS]
+                             [--model {CASP14,pTM,both}] [-e {1,8}]
+                             [-r MAX_RECYCLES] [--tol TOL] [--is_training]
+                             [--num_samples NUM_SAMPLES]
+                             [--num_relax {None,Top1,Top5,All}]
+                             [--show_images]
+
+Runner script that can take command-line arguments
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        Path to a FASTA file. Required.
+  -o OUTPUT_DIR, --output_dir OUTPUT_DIR
+                        Path to a directory that will store the results. The
+                        default name is 'prediction_<hash>'.
+  -ho HOMOOLIGOMER, --homooligomer HOMOOLIGOMER
+                        homooligomer: Define number of copies in a homo-
+                        oligomeric assembly. For example, sequence:ABC:DEF,
+                        homooligomer: 2:1, the first protein ABC will be
+                        modeled as a omodimer (2 copies) and second DEF a
+                        monomer (1 copy). Default is 1.
+  -m {mmseqs2,single_sequence,precomputed}, --msa_method {mmseqs2,single_sequence,precomputed}
+                        Options to generate MSA.mmseqs2 - FAST method from
+                        ColabFold (default) single_sequence - use single
+                        sequence input.precomputed - specify 'msa.pickle' file
+                        generated previously if you have.Default is 'mmseqs2'.
+  --precomputed PRECOMPUTED
+                        Specify the file path of a precomputed pickled msa
+                        from previous run.
+  -p {unpaired,unpaired+paired,paired}, --pair_mode {unpaired,unpaired+paired,paired}
+                        Experimental option for protein complexes. Pairing
+                        currently only supported for proteins in same operon
+                        (prokaryotic genomes). unpaired - generate seperate
+                        MSA for each protein. (default) unpaired+paired -
+                        attempt to pair sequences from the same operon within
+                        the genome. paired - only use sequences that were
+                        sucessfully paired. Default is 'unpaired'.
+  -pc PAIR_COV, --pair_cov PAIR_COV
+                        Options to prefilter each MSA before pairing. It might
+                        help if there are any paralogs in the complex.
+                        prefilter each MSA to minimum coverage with query (%)
+                        before pairing. Default is 50.
+  -pq PAIR_QID, --pair_qid PAIR_QID
+                        Options to prefilter each MSA before pairing. It might
+                        help if there are any paralogs in the complex.
+                        prefilter each MSA to minimum sequence identity with
+                        query (%) before pairing. Default is 20.
+  -b {pLDDT,pTMscore}, --rank_by {pLDDT,pTMscore}
+                        specify metric to use for ranking models (For protein-
+                        protein complexes, we recommend pTMscore). Default is
+                        'pLDDT'.
+  -t, --use_turbo       introduces a few modifications (compile once, swap
+                        params, adjust max_msa) to speedup and reduce memory
+                        requirements. Disable for default behavior.
+  -mm MAX_MSA, --max_msa MAX_MSA
+                        max_msa defines: max_msa_clusters:max_extra_msa number
+                        of sequences to use. This option ignored if use_turbo
+                        is disabled. Default is '512:1024'.
+  --num_CASP14_models NUM_CASP14_MODELS
+                        specify how many CASP14 model (normal model) params to
+                        try. (Default is 5)
+  --num_pTM_models NUM_PTM_MODELS
+                        specify how many pTM model params to try. (Default is
+                        5)
+  --model {CASP14,pTM,both}
+                        Model to use. CASP14 is a normal model. Both uses both
+                        models. Number of models to be used is read from
+                        num_CASP14_models and num_pTM_models respectively.
+                        (Default is CASP14)
+  -e {1,8}, --num_ensemble {1,8}
+                        the trunk of the network is run multiple times with
+                        different random choices for the MSA cluster centers.
+                        (1=default, 8=casp14 setting)
+  -r MAX_RECYCLES, --max_recycles MAX_RECYCLES
+                        controls the maximum number of times the structure is
+                        fed back into the neural network for refinement.
+                        (default is 3)
+  --tol TOL             tolerance for deciding when to stop (CA-RMS between
+                        recycles)
+  --is_training         enables the stochastic part of the model (dropout),
+                        when coupled with num_samples can be used to 'sample'
+                        a diverse set of structures. False (NOT specifying
+                        this option) is recommended at first.
+  --num_samples NUM_SAMPLES
+                        number of random_seeds to try. Default is 1.
+  --num_relax {None,Top1,Top5,All}
+                        num_relax is 'None' (default), 'Top1', 'Top5' or
+                        'All'. Specify how many of the top ranked structures
+                        to relax.
+  --show_images         show images
+```
