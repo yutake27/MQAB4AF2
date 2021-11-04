@@ -82,7 +82,9 @@ def make_output_dir(output_dir_name: str) -> Tuple[Path, Path]:
     # └── output_dir_name
     #     ├── fasta
     #     └── pdb
+    #     └── native_pdb
     #     └── score
+    #       └── label
     #     └── alphafold_output
     output_dir = data_dir / 'out' / output_dir_name
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -94,6 +96,8 @@ def make_output_dir(output_dir_name: str) -> Tuple[Path, Path]:
     output_native_pdb_dir.mkdir(exist_ok=True)
     output_score_dir = output_dir / 'score'
     output_score_dir.mkdir(exist_ok=True)
+    output_label_dir = output_score_dir / 'label'
+    output_label_dir.mkdir(exist_ok=True)
     output_alphafold_dir = output_dir / 'alphafold_output'
     output_alphafold_dir.mkdir(exist_ok=True)
     return output_fasta_dir, output_alphafold_dir
