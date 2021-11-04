@@ -11,7 +11,7 @@ import prody.atomic.atomgroup
 from Bio.PDB import PDBIO, MMCIFParser, PDBExceptions
 from prody import parsePDB, writePDB
 
-from seq import AlignSeq, ReadSeq
+from .seq import AlignSeq, ReadSeq
 
 warnings.simplefilter('ignore', PDBExceptions.PDBConstructionWarning)
 
@@ -117,7 +117,7 @@ class DownloadProtein:
         print('num missing residues:', num_missing)
 
     @classmethod
-    def download_pdb_specific_chain(cls, pdb_id: str, chain: str, fasta_seq: str, output_pdb_path: str) -> None:
+    def download_pdb_specific_chain(cls, pdb_id: str, chain: str, fasta_path: str, output_pdb_path: str) -> None:
         """download the specific chain of pdb and fix residue numbers.
         """
         if not Path(output_pdb_path).exists():
@@ -135,6 +135,7 @@ class DownloadProtein:
                 new_resnums = cls.correct_resnums(mol)
                 mol.setResnums(new_resnums)
                 pdb_seq, pdb_resnums = ReadSeq.mol2seq(mol, insert_gap=True)
+                fasta_seq = ReadSeq.fasta2seq(fasta_path)
                 align_pseq, align_fseq, align_findices, align_pindices = AlignSeq.align_fasta_and_pdb(
                     fasta_seq, pdb_seq)
                 sel_mol_resnums = pdb_resnums[align_pindices]
