@@ -1,4 +1,6 @@
 import subprocess
+from pathlib import Path
+from typing import List, Tuple, Union
 import pandas as pd
 
 from tqdm import tqdm
@@ -6,7 +8,7 @@ from tqdm import tqdm
 
 class ModelAccuracy:
     @staticmethod
-    def _parse_TMscore(result):
+    def _parse_TMscore(result) -> Tuple[float, float, float]:
         lines = result.split('\n')
         for line in lines:
             line_split = line.split()
@@ -21,22 +23,22 @@ class ModelAccuracy:
         return tmscore, gdtts, gdtha
 
     @staticmethod
-    def _run_TMscore(native_pdb, model_pdb):
-        cmd = ['TMscore', native_pdb, model_pdb, '-outfmt', '-1']
+    def _run_TMscore(model_pdb, native_pdb) -> str:
+        cmd = ['TMscore', model_pdb, native_pdb, '-outfmt', '-1']
         result = subprocess.check_output(cmd)
         return result.decode('utf-8')
 
     @classmethod
-    def get_gdt(cls, native_pdb, model_pdb):
-        result = cls._run_TMscore(native_pdb, model_pdb)
+    def get_gdt(cls, model_pdb, native_pdb) -> Tuple[float, float, float]:
+        result = cls._run_TMscore(model_pdb, native_pdb)
         tmscore, gdtts, gdtha = cls._parse_TMscore(result)
         return tmscore, gdtts, gdtha
 
     @classmethod
-    def get_gdt_for_dir(cls, native_pdb_path, model_pdb_dir) -> pd.DataFrame:
+    def get_gdt_for_dir(cls, native_pdb_path: str, model_pdb_dir: str) -> pd.DataFrame:
         results = []
-        for model in tqdm(list(model_pdb_dir.glob('*.pdb'))):
-            tmscore, gdtts, gdtha = cls.get_gdt(native_pdb_path, model)
+        for model in tqdm(list(Path(model_pdb_dir).glob('*.pdb'))):
+            tmscore, gdtts, gdtha = cls.get_gdt(model, native_pdb_path)
             results.append([model.stem, gdtts, gdtha, tmscore])
 
         df = pd.DataFrame(results, columns=['Model', 'GDT_TS', 'GDT_HA', 'TMscore'])
