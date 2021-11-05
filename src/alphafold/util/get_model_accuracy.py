@@ -1,8 +1,9 @@
 import subprocess
 from pathlib import Path
 from typing import List, Tuple, Union
-import pandas as pd
 
+import numpy as np
+import pandas as pd
 from tqdm import tqdm
 
 
@@ -44,3 +45,42 @@ class ModelAccuracy:
         df = pd.DataFrame(results, columns=['Model', 'GDT_TS', 'GDT_HA', 'TMscore'])
         df = df.sort_index()
         return df
+
+    @staticmethod
+    def _parse_lddt(result: str) -> Tuple[float, float, List[Union[float, None]]]:
+        lines = result.split('\n')
+        glolbal_lddt = float(lines[7].split()[-1])
+        local_lddts = [float(lddt) if (lddt := line.split()[4]) != '-' else None for line in lines[11:] if len(line)]
+        local_lddts_except_none = np.array(list(filter(lambda x: x, local_lddts)))
+        mean_lddt = float(np.mean(local_lddts_except_none))
+        return glolbal_lddt, mean_lddt, local_lddts
+
+    @staticmethod
+    def _run_lddt(model_pdb, native_pdb) -> str:
+        cmd = ['lddt', model_pdb, native_pdb]
+        result = subprocess.check_output(cmd)
+        return result.decode('utf-8')
+
+    @classmethod
+    def get_lddt(cls, model_pdb, native_pdb) -> Tuple[float, float, List[Union[float, None]]]:
+        result = cls._run_lddt(model_pdb, native_pdb)
+        global_lddt, mean_lddt, local_lddts = cls._parse_lddt(result)
+        return global_lddt, mean_lddt, local_lddts
+
+    @classmethod
+    def get_lddt_for_dir(cls, native_pdb_path: str, model_pdb_dir: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        global_results = []
+        models = []
+        local_results = []
+        for model in tqdm(list(Path(model_pdb_dir).glob('*.pdb'))):
+            global_lddt, mean_lddt, local_lddts = cls.get_lddt(model, native_pdb_path)
+            global_results.append([model.stem, global_lddt, mean_lddt])
+            models.append(model.stem)
+            local_results.append(local_lddts)
+
+        global_df = pd.DataFrame(global_results, columns=['Model', 'Global_LDDT', 'Mean_LDDT'])
+        global_df = global_df.sort_index()
+
+        local_lddts_t = [list(x) for x in zip(*local_results)]
+        local_df = pd.DataFrame(local_lddts_t, columns=models, index=list(range(1, len(local_lddts_t) + 1)))
+        return global_df, local_df
