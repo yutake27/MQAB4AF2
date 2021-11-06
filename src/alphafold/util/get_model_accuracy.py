@@ -2,6 +2,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
+import joblib
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -37,10 +38,12 @@ class ModelAccuracy:
 
     @classmethod
     def get_gdt_for_dir(cls, native_pdb_path: Union[str, Path], model_pdb_dir: Union[str, Path]) -> pd.DataFrame:
-        results = []
-        for model in tqdm(list(Path(model_pdb_dir).glob('*.pdb'))):
-            tmscore, gdtts, gdtha = cls.get_gdt(model, native_pdb_path)
-            results.append([model.stem, gdtts, gdtha, tmscore])
+        def get_gdt(model_pdb: Path):
+            return model_pdb.stem, *cls.get_gdt(model_pdb, native_pdb_path)
+
+        results = joblib.Parallel(n_jobs=-1)(
+            joblib.delayed(get_gdt)(model_pdb) for model_pdb in tqdm(list(model_pdb_dir.glob('*.pdb')))
+        )
 
         df = pd.DataFrame(results, columns=['Model', 'GDT_TS', 'GDT_HA', 'TMscore'])
         df = df.sort_index()
@@ -72,12 +75,19 @@ class ModelAccuracy:
             model_pdb_dir: Union[str, Path]) -> Tuple[pd.DataFrame, Dict[str, np.ndarray]]:
         global_results = []
         local_lddt_dict = {}
-        for model in tqdm(list(Path(model_pdb_dir).glob('*.pdb'))):
-            global_lddt, mean_lddt, local_lddts = cls.get_lddt(model, native_pdb_path)
-            global_results.append([model.stem, global_lddt, mean_lddt])
-            local_lddt_dict[model.stem] = local_lddts
-        if len(global_results) == 0:
+
+        def get_lddt(model_pdb: Path):
+            return model_pdb.stem, *cls.get_lddt(model_pdb, native_pdb_path)
+
+        results = joblib.Parallel(n_jobs=-1)(
+            joblib.delayed(get_lddt)(model_pdb) for model_pdb in tqdm(list(Path(model_pdb_dir).glob('*.pdb')))
+        )
+        if results is None:
             raise ValueError(f'No models found in {model_pdb_dir}')
+        for result in results:
+            model_name, global_lddt, mean_lddt, local_lddts = result
+            global_results.append([model_name, global_lddt, mean_lddt])
+            local_lddt_dict[model_name] = local_lddts
 
         global_df = pd.DataFrame(global_results, columns=['Model', 'Global_LDDT', 'Mean_LDDT'])
         global_df = global_df.sort_index()
