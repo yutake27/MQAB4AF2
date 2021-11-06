@@ -2,12 +2,12 @@ import argparse
 import tarfile
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
 from util.download_native_pdb import DownloadProtein
 from util.get_model_accuracy import ModelAccuracy
-
 
 data_dir = Path('../../data')
 
@@ -37,10 +37,16 @@ def main():
 
     # Get model accuracy
     print('Get model accuracy...')
-    label_df = ModelAccuracy.get_gdt_for_dir(native_pdb_path, alphafold_output_dir)
+    print('Running TMscore')
+    tmscore_df = ModelAccuracy.get_gdt_for_dir(native_pdb_path, alphafold_output_dir)
+    print('Running lddt')
+    global_lddt_df, local_lddt_dict = ModelAccuracy.get_lddt_for_dir(native_pdb_path, alphafold_output_dir)
+    label_df = pd.merge(tmscore_df, global_lddt_df, on='Model')
     score_df = pd.read_csv(alphafold_score_path, index_col=0)
-    df = pd.merge(label_df, score_df, on='Model').sort_values('GDT_TS')
+    df = pd.merge(score_df, label_df, on='Model').sort_values('GDT_TS').reset_index(drop=True)
     df.to_csv(output_label_path)
+    output_lddt_path = output_label_path.with_suffix('.lddt.npz')
+    np.savez_compressed(output_lddt_path, **local_lddt_dict)
 
     # Compress model_*.pickle
     tar_path = alphafold_output_dir / 'model_pickle.tar.gz'

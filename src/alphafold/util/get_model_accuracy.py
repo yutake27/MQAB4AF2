@@ -1,6 +1,6 @@
 import subprocess
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -36,7 +36,7 @@ class ModelAccuracy:
         return tmscore, gdtts, gdtha
 
     @classmethod
-    def get_gdt_for_dir(cls, native_pdb_path: str, model_pdb_dir: str) -> pd.DataFrame:
+    def get_gdt_for_dir(cls, native_pdb_path: Union[str, Path], model_pdb_dir: Union[str, Path]) -> pd.DataFrame:
         results = []
         for model in tqdm(list(Path(model_pdb_dir).glob('*.pdb'))):
             tmscore, gdtts, gdtha = cls.get_gdt(model, native_pdb_path)
@@ -47,13 +47,13 @@ class ModelAccuracy:
         return df
 
     @staticmethod
-    def _parse_lddt(result: str) -> Tuple[float, float, List[Union[float, None]]]:
+    def _parse_lddt(result: str) -> Tuple[float, float, np.ndarray]:
         lines = result.split('\n')
-        glolbal_lddt = float(lines[7].split()[-1])
-        local_lddts = [float(lddt) if (lddt := line.split()[4]) != '-' else None for line in lines[11:] if len(line)]
+        global_lddt = float(lines[7].split()[-1])
+        local_lddts = [float(lddt) if (lddt := line.split()[4]) != '-' else np.nan for line in lines[11:] if len(line)]
         local_lddts_except_none = np.array(list(filter(lambda x: x, local_lddts)))
         mean_lddt = float(np.mean(local_lddts_except_none))
-        return glolbal_lddt, mean_lddt, local_lddts
+        return global_lddt, mean_lddt, np.array(local_lddts)
 
     @staticmethod
     def _run_lddt(model_pdb, native_pdb) -> str:
@@ -62,25 +62,25 @@ class ModelAccuracy:
         return result.decode('utf-8')
 
     @classmethod
-    def get_lddt(cls, model_pdb, native_pdb) -> Tuple[float, float, List[Union[float, None]]]:
+    def get_lddt(cls, model_pdb, native_pdb) -> Tuple[float, float, np.ndarray]:
         result = cls._run_lddt(model_pdb, native_pdb)
         global_lddt, mean_lddt, local_lddts = cls._parse_lddt(result)
         return global_lddt, mean_lddt, local_lddts
 
     @classmethod
-    def get_lddt_for_dir(cls, native_pdb_path: str, model_pdb_dir: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def get_lddt_for_dir(cls, native_pdb_path: Union[str, Path],
+            model_pdb_dir: Union[str, Path]) -> Tuple[pd.DataFrame, Dict[str, np.ndarray]]:
         global_results = []
-        models = []
-        local_results = []
+        local_lddt_dict = {}
         for model in tqdm(list(Path(model_pdb_dir).glob('*.pdb'))):
             global_lddt, mean_lddt, local_lddts = cls.get_lddt(model, native_pdb_path)
             global_results.append([model.stem, global_lddt, mean_lddt])
-            models.append(model.stem)
-            local_results.append(local_lddts)
+            local_lddt_dict[model.stem] = local_lddts
+        if len(global_results) == 0:
+            raise ValueError(f'No models found in {model_pdb_dir}')
 
         global_df = pd.DataFrame(global_results, columns=['Model', 'Global_LDDT', 'Mean_LDDT'])
         global_df = global_df.sort_index()
-
-        local_lddts_t = [list(x) for x in zip(*local_results)]
-        local_df = pd.DataFrame(local_lddts_t, columns=models, index=list(range(1, len(local_lddts_t) + 1)))
-        return global_df, local_df
+        res_indices = np.arange(1, len(local_lddts) + 1)
+        local_lddt_dict['res_indices'] = res_indices
+        return global_df, local_lddt_dict
