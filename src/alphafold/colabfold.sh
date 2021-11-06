@@ -35,7 +35,7 @@ num_ensembles="1 8"
 
 # Run colabfold
 date
-cd ${alphafold_path}
+pushd ${alphafold_path}
 if [ ! -e ${msa_pickle_path} ]; then
     echo precomputed MSA does not exist
     colabfold-conda/bin/python3.7 runner_af2advanced.py \
@@ -65,4 +65,11 @@ else
     --msa_method precomputed \
     --precomputed ${msa_pickle_path}
 fi
+date
+popd
+
+# post processing
+module load python/3.9.2
+source ../../.venv/bin/activate
+python post_process.py ${output}
 date
