@@ -43,7 +43,7 @@ def main():
     global_lddt_df, local_lddt_dict = ModelAccuracy.get_lddt_for_dir(native_pdb_path, alphafold_output_dir)
     label_df = pd.merge(tmscore_df, global_lddt_df, on='Model')
     score_df = pd.read_csv(alphafold_score_path, index_col=0)
-    df = pd.merge(score_df, label_df, on='Model').sort_values('GDT_TS').reset_index(drop=True)
+    df = pd.merge(label_df, score_df, on='Model').sort_values('GDT_TS').reset_index(drop=True)
     df.to_csv(output_label_path)
     output_lddt_path = output_label_path.with_suffix('.lddt.npz')
     np.savez_compressed(output_lddt_path, **local_lddt_dict)
