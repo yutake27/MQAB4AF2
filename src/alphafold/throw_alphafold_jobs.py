@@ -41,6 +41,10 @@ class ThrowJob:
         output_score_path = output_target_dir / 'scores.csv'
         if output_score_path.exists():  # check if the output file already exists
             print(f'{entry_id} already done')
+            tar_pkl_path = output_target_dir / 'model_pickle.tar.gz'
+            if not tar_pkl_path.exists():  # check if post processing is done
+                cmd = ['python', 'post_process.py', f'{output_target_dir}']
+                print(' '.join(cmd))
             return
         fasta_path = make_fasta(entry_id, header, seq, fasta_dir)
         assert fasta_path.exists()
