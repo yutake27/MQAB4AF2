@@ -4,6 +4,7 @@ Read the csv of the target list and submit jobs to run Alphafold on each target.
 
 import argparse
 import datetime
+import math
 import subprocess
 from pathlib import Path
 from typing import List, Tuple
@@ -12,6 +13,55 @@ import pandas as pd
 
 # Directory of the data
 data_dir = Path('../../data/').resolve()
+
+
+class DetermineJobParams:
+    @staticmethod
+    def estimate_time_from_length(length: int, ensemble: str = 'full') -> str:
+        """
+        Estimate the time required to run a job based on the length of the target.
+
+        Args:
+        length (int): Length of the target.
+        ensemble (str): Whether to run ensemble or not. Choices=['full', 'ens', 'noens']. Default is full.
+
+        Returns:
+            str: Estimated time required to run the job.
+        """
+        assert ensemble in ['full', 'ens', 'noens']
+        fitting_params = {
+            # Slope and intercept obtained from fitting curve in sample running.
+            # The 24-hour rate is calculated. For example, 0.5 means 12 hours.
+            'full': {
+                's': 0.001410034,
+                'i': -0.01651
+            },
+            'ens': {
+                's': 0.001602107,
+                'i': -0.082827655
+            },
+            'noens': {  # calculate only from sequence with over 400 residues
+                's': 0.000424883,
+                'i': -0.094979556
+            },
+        }
+        estimated_hour = (fitting_params[ensemble]['s'] * length + fitting_params[ensemble]['i']) * 24
+        spare_hour = 0.5
+        total_time = estimated_hour + spare_hour
+        _minute, hour = math.modf(total_time)
+        assert _minute < 1
+        minute = _minute * 60
+        return f'{int(hour)}:{int(minute):02d}:00'
+
+    @staticmethod
+    def determine_run_ensemble_from_length(length: int) -> bool:
+        """
+        Determine whether to run the ensemble or not based on the length of the target.
+        """
+        if length < 400:
+            return True
+        else:
+            return False
 
 
 class ThrowJob:
@@ -48,14 +98,22 @@ class ThrowJob:
             return
         fasta_path = make_fasta(entry_id, header, seq, fasta_dir)
         assert fasta_path.exists()
-        # time = estimate_time_from_length(length, method)
-        time = '12:00:00'
+        # Determine run ensemble or not
+        run_ensemble = DetermineJobParams.determine_run_ensemble_from_length(length)
+        if run_ensemble:
+            ensemble = 'full'
+        else:
+            ensemble = 'noens'
+        # Determine the time required to run the job
+        time = DetermineJobParams.estimate_time_from_length(length, ensemble)
         qsub_header = ['qsub', '-g', 'tga-ishidalab', '-l', f'h_rt={time}', '-N', f'af_{entry_id}_{length}']
         if method == 'alphafold':
             max_template_date = get_max_template_date_from_releasedate(release_date)
             cmd = ['./alphafold.sh', str(fasta_path), str(output_target_dir), str(max_template_date)]
         elif method == 'colabfold':
-            cmd = ['./colabfold.sh', str(fasta_path), str(output_target_dir)]
+            cmd = ['./colabfold.sh', '-f', str(fasta_path), '-o', str(output_target_dir)]
+            if not run_ensemble:  # only use ensemble 1
+                cmd += ['-e', '1']
         else:
             return
         cmd = qsub_header + cmd
