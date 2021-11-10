@@ -73,7 +73,8 @@ class ThrowJob:
             subprocess.run(cmd)
 
     @classmethod
-    def throw_job(cls, row: pd.Series, fasta_dir: Path, output_dir: Path, method: str, qsub: bool):
+    def throw_job(cls, row: pd.Series, fasta_dir: Path, output_dir: Path,
+                  method: str, qsub: bool, runall: bool = False):
         """throw a job to run alphafold or colabfold on a target
 
         Args:
@@ -89,7 +90,7 @@ class ThrowJob:
         length = row['length']
         output_target_dir = output_dir / entry_id
         output_score_path = output_target_dir / 'scores.csv'
-        if output_score_path.exists():  # check if the output file already exists
+        if output_score_path.exists() and not runall:  # check if the output file already exists
             print(f'{entry_id} already done')
             tar_pkl_path = output_target_dir / 'model_pickle.tar.gz'
             if not tar_pkl_path.exists():  # check if post processing is done
@@ -173,11 +174,14 @@ def main():
     parser.add_argument('--method', default='colabfold', choices=['alphafold', 'colabfold'],
                         type=str, help='Alphafold or Colabfold.')
     parser.add_argument('-q', '--qsub', action='store_true', help='Submit the job to the queue.')
+    parser.add_argument('--runall', action='store_true',
+                        help='Run command even for targets that have already been completed')
     args = parser.parse_args()
 
     num_targets = args.num_targets
     method = args.method
     qsub = args.qsub
+    runall = args.runall
 
     output_dir_name = args.dataset_name
     fasta_dir, output_alphafold_dir = make_output_dir(output_dir_name)
@@ -186,7 +190,7 @@ def main():
     num_targets = num_targets if num_targets > 0 else len(df)
     df = df[: num_targets]
     for index, row in df.iterrows():
-        ThrowJob.throw_job(row, fasta_dir, output_alphafold_dir, method, qsub)
+        ThrowJob.throw_job(row, fasta_dir, output_alphafold_dir, method, qsub, runall)
 
 
 if __name__ == '__main__':
