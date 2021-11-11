@@ -136,12 +136,13 @@ else
     cmd+="--msa_method precomputed --precomputed ${msa_pickle_path}"
 fi
 echo ${cmd}
-${cmd}
+mkdir -p ${output_dir}
+echo "`date` ${cmd}" >> ${output_dir}/colabfold.log
+${cmd} # Execute colabfold
 date
 popd
 
 # post processing
-output_score_path=${output_dir}/scores.csv
 if [ ! -e ${output_score_path} ]; then
     echo "AlphaFold prediction is not complete."
     exit 1
