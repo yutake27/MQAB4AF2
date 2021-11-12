@@ -148,6 +148,7 @@ if [ ! -e ${output_score_path} ]; then
     exit 1
 fi
 
+source /home/4/16B09097/.bashrc  # source PATH for TMscore and lddt. Please set your own PATH
 module load python/3.9.2
 source ../../.venv/bin/activate
 python post_process.py ${output_dir}
