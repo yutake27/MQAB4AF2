@@ -169,6 +169,7 @@ def make_output_dir(output_dir_name: str) -> Tuple[Path, Path]:
 def main():
     parser = argparse.ArgumentParser(description='Run Alphafold on the target list.')
     parser.add_argument('dataset_name', type=str, help='Name of the dataset.')
+    parser.add_argument('-t', '--target_list_path', type=str, help='Path to the target list.')
     parser.add_argument('-n', '--num_targets', type=int, default=-1,
                         help='Number of targets to run. -1 means all.')
     parser.add_argument('--method', default='colabfold', choices=['alphafold', 'colabfold'],
@@ -185,7 +186,10 @@ def main():
 
     output_dir_name = args.dataset_name
     fasta_dir, output_alphafold_dir = make_output_dir(output_dir_name)
-    target_list_path = data_dir / 'interim' / 'target_list.csv'
+    if args.target_list_path is None:
+        target_list_path = data_dir / 'interim' / 'target_list.csv'
+    else:
+        target_list_path = args.target_list_path
     df = pd.read_csv(target_list_path, index_col=0)
     num_targets = num_targets if num_targets > 0 else len(df)
     df = df[: num_targets]
