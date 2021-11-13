@@ -17,13 +17,16 @@ data_dir = Path('../../data/').resolve()
 
 class DetermineJobParams:
     @staticmethod
-    def estimate_time_from_length(length: int, ensemble: str = 'full') -> str:
+    def estimate_time_from_length(length: int, ensemble: str = 'full',
+                                  resume=False, resume_divider: int = 4) -> str:
         """
         Estimate the time required to run a job based on the length of the target.
 
         Args:
         length (int): Length of the target.
         ensemble (str): Whether to run ensemble or not. Choices=['full', 'ens', 'noens']. Default is full.
+        resume (bool): Whether to resume or not. Default is False.
+        resume_divider (int): Number to divide the estimated time when resuming. Default is 4.
 
         Returns:
             str: Estimated time required to run the job.
@@ -48,6 +51,8 @@ class DetermineJobParams:
         estimated_hour = (fitting_params[ensemble]['s'] * length + fitting_params[ensemble]['i']) * 24
         spare_hour = 0.5
         total_time = estimated_hour + spare_hour
+        if resume:
+            total_time /= resume_divider
         _minute, hour = math.modf(total_time)
         assert _minute < 1
         minute = _minute * 60
@@ -106,7 +111,8 @@ class ThrowJob:
         else:
             ensemble = 'noens'
         # Determine the time required to run the job
-        time = DetermineJobParams.estimate_time_from_length(length, ensemble)
+        resume: bool = (output_target_dir / 'msa.pickle').exists()
+        time = DetermineJobParams.estimate_time_from_length(length, ensemble, resume)
         qsub_header = ['qsub', '-g', 'tga-ishidalab', '-l', f'h_rt={time}', '-N', f'af_{entry_id}_{length}']
         if method == 'alphafold':
             max_template_date = get_max_template_date_from_releasedate(release_date)
