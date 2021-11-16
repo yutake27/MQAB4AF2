@@ -20,6 +20,8 @@ from prody import parsePDB, confProDy
 
 confProDy(verbosity='none')
 
+dataset_dir = Path('../../data/out/dataset').resolve()
+
 
 def not_be_modeled(target_pdb_dir: Path) -> bool:
     """
@@ -36,9 +38,12 @@ def throw_job(target_pdb_dir: Path, method: str, output_score_path: Path, qsub: 
     """
     Throw a job of the specified MQA method.
     """
+    target = target_pdb_dir.stem
     cmd = [f'./{method}.sh', str(target_pdb_dir), str(output_score_path)]
+    if method in ['ProQ3D', 'P3CMQA']:  # If fasta path needed
+        fasta_path = dataset_dir / 'fasta' / f'{target}.fasta'
+        cmd += [str(fasta_path), str(target)]
     if qsub:
-        target = target_pdb_dir.stem
         cmd = ['qsub', '-g', 'tga-ishidalab', '-N', f'{method}_{target}'] + cmd
     print(' '.join(cmd))
     if execute:
@@ -77,7 +82,6 @@ def main():
         └── subsets
             └── subset
     """
-    dataset_dir = Path('../../data/out/dataset').resolve()
     score_dir = dataset_dir / 'score'
     alphafold_output_dir = dataset_dir / 'alphafold_output'
     mqa_output_dir = score_dir / 'mqa' / method
