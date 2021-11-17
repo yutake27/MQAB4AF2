@@ -42,7 +42,7 @@ class ModelAccuracy:
             return model_pdb.stem, *cls.get_gdt(model_pdb, native_pdb_path)
 
         results = joblib.Parallel(n_jobs=-1)(
-            joblib.delayed(get_gdt)(model_pdb) for model_pdb in tqdm(list(model_pdb_dir.glob('*.pdb')))
+            joblib.delayed(get_gdt)(model_pdb) for model_pdb in tqdm(list(Path(model_pdb_dir).glob('*.pdb')))
         )
 
         df = pd.DataFrame(results, columns=['Model', 'GDT_TS', 'GDT_HA', 'TMscore'])
