@@ -54,7 +54,11 @@ def concatenate_scores(mqa_output_dir: Path, target_list: List, subset_score_pat
     """
     Concatenate mqa scores for targets in the target list.
     """
-    df_list = [pd.read_csv(mqa_output_dir / f'{target}.csv', index_col=0) for target in target_list]
+    df_list = []
+    for target in target_list:
+        target_df = pd.read_csv(mqa_output_dir / f'{target}.csv', index_col=0)
+        target_df['Target'] = target
+        df_list.append(target_df)
     df = pd.concat(df_list)
     df.to_csv(subset_score_path)
 
