@@ -170,10 +170,10 @@ class AlignSeq:
         """
         align_fseq, align_pseq, align_findices, align_pindices = cls.align_seq(fasta_seq, pdb_seq)
         p_start, p_end = cls._get_max_serial_position(align_pindices)
-        if p_end - p_start + 1 < len(fasta_seq) * alignment_percentage_threshold:
-            print('Alignment length is not sufficient.')
-            print(p_end - p_start + 1, len(fasta_seq))
-            raise ValueError('Alignment length is not sufficient')
+        alignment_length = p_end - p_start + 1
+        if alignment_length < len(fasta_seq) * alignment_percentage_threshold or alignment_length < 30:
+            raise ValueError('Alignment length is not sufficient.' +
+                             f'Only match {alignment_length} residues in total {len(fasta_seq)} residues.')
         p_not_serial = np.delete(np.arange(len(align_pindices)), np.arange(p_start, p_end + 1), 0)
         align_findices = np.delete(align_findices, p_not_serial, 0)
         align_pindices = np.delete(align_pindices, p_not_serial, 0)
