@@ -1,6 +1,7 @@
 import gzip
 import os
 import tempfile
+from typing import Tuple
 import urllib.request
 import warnings
 from functools import reduce
@@ -11,7 +12,10 @@ import prody.atomic.atomgroup
 from Bio.PDB import PDBIO, MMCIFParser, PDBExceptions
 from prody import parsePDB, writePDB
 
-from .seq import AlignSeq, ReadSeq
+try:
+    from .seq import AlignSeq, ReadSeq
+except ImportError:
+    from seq import AlignSeq, ReadSeq
 
 warnings.simplefilter('ignore', PDBExceptions.PDBConstructionWarning)
 
@@ -98,7 +102,7 @@ class DownloadProtein:
         return np.array(new_resnum_list)
 
     @staticmethod
-    def _test_resnum_match(fasta_seq: str, mol: prody.atomic.atomgroup.AtomGroup) -> None:
+    def _test_resnum_match(fasta_seq: str, mol: prody.atomic.atomgroup.AtomGroup) -> Tuple[int, int]:
         """test that the fasta sequence matches to the pdb sequence.
 
         Args:
@@ -115,35 +119,59 @@ class DownloadProtein:
         print('length:', len(fasta_seq))
         print('num different residues between pdb and fasta:', num_diff)
         print('num missing residues:', num_missing)
+        return num_diff, num_missing
+
+    @staticmethod
+    def test_match_pdb_and_fasta(pdb_path: str, fasta_path: str) -> Tuple[int, int, int]:
+        """test that the pdb sequence matches to the fasta sequence.
+
+        Args:
+            pdb_path (str): Path to the pdb file.
+            fasta_path (str): Path to the fasta file.
+
+        Returns:
+            Tuple[int, int, int]: Number of different residues between pdb and fasta,
+            number of missing residues, and length of the target sequence.
+        """
+        mol = parsePDB(pdb_path)
+        fasta_seq = ReadSeq.fasta2seq(fasta_path)
+        num_diff, num_missing = DownloadProtein._test_resnum_match(fasta_seq, mol)
+        return num_diff, num_missing, len(fasta_seq)
 
     @classmethod
-    def download_pdb_specific_chain(cls, pdb_id: str, chain: str, fasta_path: str, output_pdb_path: str) -> None:
-        """download the specific chain of pdb and fix residue numbers.
+    def download_pdb_specific_chain(cls, pdb_id: str, chain: str, fasta_path: str,
+                                    output_pdb_path: str, alignment_percentage_threshold=0.3) -> None:
+        """Download the specific chain of pdb and fix residue numbers.
+
+        Args:
+            pdb_id (str): PDB ID.
+            chain (str): Chain name.
+            fasta_path (str): Path to the fasta file of the pdb_id.
+            output_pdb_path (str): Path to the output pdb file.
         """
-        if not Path(output_pdb_path).exists():
-            with tempfile.NamedTemporaryFile() as f:
-                # tmp_pdb_path = pdb_id + '.pdb'
-                tmp_pdb_path = f.name
-                cls.download_native_pdb(pdb_id, chain, tmp_pdb_path)
-                # fasta_seq = ReadSeq.fasta2seq(self.native_fasta_path)
-                mol = parsePDB(tmp_pdb_path, chain=chain)
-                # if the first residue number is negative, correct the residue numbers
-                if mol.getResnums()[0] < 0:
-                    resnums = mol.getResnums()
-                    new_resnums = resnums - resnums[0] + 1
-                    mol.setResnums(new_resnums)
-                new_resnums = cls.correct_resnums(mol)
+        with tempfile.NamedTemporaryFile() as f:
+            # tmp_pdb_path = pdb_id + '.pdb'
+            tmp_pdb_path = f.name
+            cls.download_native_pdb(pdb_id, chain, tmp_pdb_path)
+            # fasta_seq = ReadSeq.fasta2seq(self.native_fasta_path)
+            mol = parsePDB(tmp_pdb_path, chain=chain)
+            # if the first residue number is negative, correct the residue numbers
+            if mol.getResnums()[0] < 0:
+                resnums = mol.getResnums()
+                new_resnums = resnums - resnums[0] + 1
                 mol.setResnums(new_resnums)
-                pdb_seq, pdb_resnums = ReadSeq.mol2seq(mol, insert_gap=True)
-                fasta_seq = ReadSeq.fasta2seq(fasta_path)
-                align_pseq, align_fseq, align_findices, align_pindices = AlignSeq.align_fasta_and_pdb(
-                    fasta_seq, pdb_seq)
-                sel_mol_resnums = pdb_resnums[align_pindices]
-                sel_mol = mol.select('resnum {}'.format(reduce(lambda a, b: str(a) + ' ' + str(b), sel_mol_resnums)))
-                assert sel_mol is not None
-                fasta_resnum = align_findices + 1
-                convert_resnum_dict = dict(zip(sel_mol_resnums, fasta_resnum))
-                new_resnum = [convert_resnum_dict[resnum] for resnum in sel_mol.getResnums()]
-                sel_mol.setResnums(new_resnum)
-                cls._test_resnum_match(fasta_seq, sel_mol)
-                writePDB(str(output_pdb_path), sel_mol)
+            new_resnums = cls.correct_resnums(mol)
+            mol.setResnums(new_resnums)
+            pdb_seq, pdb_resnums = ReadSeq.mol2seq(mol, insert_gap=True)
+            fasta_seq = ReadSeq.fasta2seq(fasta_path)
+            align_pseq, align_fseq, align_findices, align_pindices = AlignSeq.align_fasta_and_pdb(
+                fasta_seq, pdb_seq, alignment_percentage_threshold=alignment_percentage_threshold)
+            sel_mol_resnums = pdb_resnums[align_pindices]
+            sel_mol = mol.select('resnum {}'.format(reduce(lambda a, b: str(a) + ' ' + str(b), sel_mol_resnums)))
+            assert sel_mol is not None
+            fasta_resnum = align_findices + 1
+            convert_resnum_dict = dict(zip(sel_mol_resnums, fasta_resnum))
+            new_resnum = [convert_resnum_dict[resnum] for resnum in sel_mol.getResnums()]
+            sel_mol.setResnums(new_resnum)
+            cls._test_resnum_match(fasta_seq, sel_mol)
+            writePDB(str(output_pdb_path), sel_mol)
