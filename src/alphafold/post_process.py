@@ -41,7 +41,6 @@ def main():
     print('Get model accuracy...')
     if output_label_path.exists():
         print('Accuracy has been already calculated.')
-        df = pd.read_csv(output_label_path, index_col=0)
     else:
         print('Running TMscore')
         tmscore_df = ModelAccuracy.get_gdt_for_dir(native_pdb_path, alphafold_output_dir)
