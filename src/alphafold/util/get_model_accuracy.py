@@ -54,7 +54,7 @@ class ModelAccuracy:
         lines = result.split('\n')
         global_lddt = float(lines[7].split()[-1])
         local_lddts = [float(lddt) if (lddt := line.split()[4]) != '-' else np.nan for line in lines[11:] if len(line)]
-        local_lddts_except_none = np.array(list(filter(lambda x: x, local_lddts)))
+        local_lddts_except_none = np.array(list(filter(lambda x: not np.isnan(x), local_lddts)))
         mean_lddt = float(np.mean(local_lddts_except_none))
         return global_lddt, mean_lddt, np.array(local_lddts)
 
