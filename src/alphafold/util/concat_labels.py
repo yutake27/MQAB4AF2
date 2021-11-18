@@ -24,7 +24,7 @@ def concat_labels(label_dir: Path, target_list: List, skip: bool = False) -> pd.
         label_df['Target'] = target
         label_df = label_df.sort_values('Model').reset_index(drop=True)
         label_dfs.append(label_df)
-    return pd.concat(label_dfs)
+    return pd.concat(label_dfs).reset_index(drop=True)
 
 
 def main():
