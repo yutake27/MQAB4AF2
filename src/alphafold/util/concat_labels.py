@@ -15,7 +15,10 @@ def concat_labels(label_dir: Path, target_list: List, skip: bool = False) -> pd.
     label_dfs = []
     for target in target_list:
         label_csv = label_dir / f'{target}.csv'
-        if not label_csv.exists() and not skip:
+        if not label_csv.exists():
+            if skip:
+                print(f'Label for {target} does not exist. Skipping.')
+                continue
             raise FileNotFoundError(f'{label_csv} does not exist')
         label_df = pd.read_csv(label_csv, index_col=0)
         label_df['Target'] = target
