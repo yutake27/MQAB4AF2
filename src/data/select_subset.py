@@ -31,8 +31,8 @@ def get_target_subset(csv_path, how='eq_random', target_num=100, random_state=0)
     elif how == 'eq_random':
         similar_df = df[df['is_similar_AF2'] == True]
         non_similar_df = df[df['is_similar_AF2'] == False]
-        similar_sample = similar_df.sample(target_num // 2, random_state=random_state)
-        non_similar_sample = non_similar_df.sample(target_num // 2, random_state=random_state)
+        similar_sample = similar_df.sample(frac=1, random_state=random_state).head(target_num // 2)
+        non_similar_sample = non_similar_df.sample(frac=1, random_state=random_state).head(target_num // 2)
         df_sample = pd.concat([similar_sample, non_similar_sample])
     elif how == 'head':
         df_sample = df.head(n=target_num)
@@ -40,7 +40,7 @@ def get_target_subset(csv_path, how='eq_random', target_num=100, random_state=0)
         df_sample = df.tail(n=target_num)
     else:
         raise ValueError('Invalid how: {}'.format(how))
-    return df_sample
+    return df_sample.reset_index(drop=True)
 
 
 def main():
