@@ -112,8 +112,8 @@ class ThrowJob:
             ensemble = 'noens'
         # Determine the time required to run the job
         resume: bool = (output_target_dir / 'msa.pickle').exists()
-        time = DetermineJobParams.estimate_time_from_length(length, ensemble, resume)
-        qsub_header = ['qsub', '-g', 'tga-ishidalab', '-l', f'h_rt={time}', '-N', f'af_{entry_id}_{length}']
+        qsub_time = DetermineJobParams.estimate_time_from_length(length, ensemble, resume)
+        qsub_header = ['qsub', '-g', 'tga-ishidalab', '-l', f'h_rt={qsub_time}', '-N', f'af_{entry_id}_{length}']
         if method == 'alphafold':
             max_template_date = get_max_template_date_from_releasedate(release_date)
             cmd = ['./alphafold.sh', str(fasta_path), str(output_target_dir), str(max_template_date)]
