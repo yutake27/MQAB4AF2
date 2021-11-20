@@ -4,6 +4,7 @@
 import datetime
 import inspect
 import json
+import sqlite3
 import sys
 import time
 from pathlib import Path
@@ -322,6 +323,18 @@ class Cluster:
                 return entry.get_all_attribute()
         return None
 
+    def _get_target_info_by_name(self, target_name: str, num_entry_in_cluster: int,
+                                 num_entry_in_cluster_AF2_notInclude: int) -> dict:
+        """Get target information by name.
+        """
+        pdb_id = target_name[: 4]
+        resolution = self.resolution_dict[pdb_id]
+        releasedate = self.releasedates_dict[pdb_id]
+        header, sequence = self.ss.search_sequence(target_name)
+        entry = Entry(target_name, resolution, releasedate, header, sequence,
+                      num_entry_in_cluster, num_entry_in_cluster_AF2_notInclude)
+        return entry.get_all_attribute()
+
     def select_targets_from_each_cluster(self) -> list[dict]:
         """Select targets from each cluster.
 
@@ -329,10 +342,29 @@ class Cluster:
             list: List of dict of target information.
         """
         targets: list[dict] = []
-        for entries, num_entry_in_cluster in tqdm(self.clusters, desc='Select target from cluster'):
-            target = self._select_target_from_cluster(entries, num_entry_in_cluster)
-            if target is not None:
+        db_path = data_dir / 'interim' / 'db' / 'targets.db'
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        con = sqlite3.connect(db_path)
+        cur = con.cursor()
+        cur.execute('CREATE TABLE IF NOT EXISTS targets(cluster_index INT, id TEXT)')
+        con.commit()
+        for i, (entries, num_entry_in_cluster) in enumerate(tqdm(self.clusters, desc='Select target from cluster')):
+            cache_exist = cur.execute('SELECT * FROM targets WHERE cluster_index = ?', (i,)).fetchone()
+            if cache_exist:
+                target_name = cache_exist[1]
+                if target_name is None:
+                    continue
+                target = self._get_target_info_by_name(target_name, num_entry_in_cluster, len(entries))
                 targets.append(target)
+            else:
+                target = self._select_target_from_cluster(entries, num_entry_in_cluster)
+                if target is None:
+                    cur.execute("""INSERT INTO targets VALUES(?, ?)""", (i, None))
+                else:
+                    targets.append(target)
+                    cur.execute("""INSERT INTO targets VALUES(?, ?)""", (i, target['id']))
+                con.commit()
+        con.close()
         return targets
 
 
