@@ -4,12 +4,17 @@
 import datetime
 import inspect
 import json
+import sys
+import time
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import requests
 from tqdm import tqdm
+
+sys.path.append('../alphafold/util/')
+from download_native_pdb import DownloadProtein
 
 data_dir = Path('../../data')
 
@@ -150,6 +155,44 @@ class CheckSequence:
         return True
 
 
+def make_fasta(fasta_path: Path, header: str, sequence: str, len_line=100):
+    with open(fasta_path, 'w') as f:
+        f.write(header + '\n')
+        for i in range((len(sequence) - 1) // len_line + 1):
+            f.write(sequence[i * len_line: (i + 1) * len_line] + '\n')
+
+
+class CheckNative:
+    @classmethod
+    def check_native(cls, id: str, header: str, sequence: str) -> bool:
+        pdb_path = data_dir / 'out' / 'dataset' / 'native_pdb' / f'{id}.pdb'
+        pdb_id, chain = id.split('_')
+        fasta_path = data_dir / 'out' / 'dataset' / 'fasta' / f'{id}.fasta'
+
+        def _remove_files():
+            pdb_path.unlink()
+            fasta_path.unlink()
+
+        if not fasta_path.exists():  # make fasta file
+            make_fasta(fasta_path, header, sequence)
+        if not pdb_path.exists():  # download pdb file
+            try:
+                time.sleep(1)
+                DownloadProtein.download_pdb_specific_chain(pdb_id, chain, fasta_path, pdb_path)
+            except (ValueError, AssertionError):
+                fasta_path.unlink()
+                return False
+        # Check the ratio of missing residues
+        try:
+            num_diff, num_missing, length = DownloadProtein.test_match_pdb_and_fasta(pdb_path, fasta_path)
+        except AssertionError:
+            _remove_files()
+            return False
+        if (num_missing / length) > 0.2:
+            _remove_files()
+            return False
+        return True
+
 class Entry:
     """A class that stores information about an entry
     and determines if it is a suitable for a target.
@@ -187,8 +230,11 @@ class Entry:
     def _check_resolution(self):
         pass
 
+    def _check_native(self):
+        return CheckNative.check_native(self.id, self.header, self.sequence)
+
     def check_entry(self) -> bool:
-        return self._check_sequence()
+        return self._check_sequence() and self._check_native()
 
     def get_all_attribute(self) -> dict:
         return {key: value for key, value in self.__dict__.items()}
