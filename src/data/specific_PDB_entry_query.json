@@ -32,7 +32,11 @@
           "operator": "in",
           "value": [
               "SOLID-STATE NMR",
-              "SOLUTION NMR"
+              "SOLUTION NMR",
+              "ELECTRON MICROSCOPY",
+              "ELECTRON CRYSTALLOGRAPHY",
+              "NEUTRON DIFFRACTION",
+              "SOLUTION SCATTERING"
           ],
           "attribute": "exptl.method"
         }
