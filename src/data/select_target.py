@@ -8,6 +8,7 @@ import sqlite3
 import sys
 import time
 from pathlib import Path
+from typing import Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -30,19 +31,19 @@ class SearchAPI:
     api_url = 'https://search.rcsb.org/rcsbsearch/v1/query?json='
 
     @classmethod
-    def get(cls, query: json):
+    def get(cls, query: json) -> dict:
         res = requests.get(cls.api_url + json.dumps(query))
         assert res.status_code == 200
         return res.json()
 
     @classmethod
-    def get_entries(cls, query: json):
+    def get_entries(cls, query: json) -> list:
         res_json = cls.get(query)
         entry_list = res_json['result_set']
         return entry_list
 
 
-def get_entry():
+def get_entry() -> list:
     with open('./specific_PDB_entry_query.json', 'r') as f:
         query = json.load(f)
         entry_list = SearchAPI.get_entries(query)
@@ -67,7 +68,7 @@ class GraphQL:
         return res.json()
 
     @classmethod
-    def fetch_resolution_and_releasedate(cls, pdb_ids: list) -> (list, list):
+    def fetch_resolution_and_releasedate(cls, pdb_ids: list) -> Tuple[list, list]:
         query = ('query($ids: [String!]!){entries(entry_ids: $ids){rcsb_entry_info{resolution_combined},' +
                  'rcsb_accession_info{initial_release_date}}}')
         variables = {'ids': pdb_ids}
@@ -87,7 +88,7 @@ class SearchSequence:
         entry_set = set(entries)
         self.headers, self.sequences = self._prefiltering(entry_set)
 
-    def _prefiltering(self, entry_set: set) -> (list, list):
+    def _prefiltering(self, entry_set: set) -> Tuple[list, list]:
         with open(self.pdb_seqres_file, 'r') as f:
             headers = []
             sequences = []
@@ -101,7 +102,7 @@ class SearchSequence:
                     sequences.append(seq)
             return headers, sequences
 
-    def search_sequence(self, id: str) -> (str, str):
+    def search_sequence(self, id: str) -> Tuple[str, str]:
         """Search sequence from pdb seqres.
 
         Args:
@@ -194,6 +195,7 @@ class CheckNative:
             return False
         return True
 
+
 class Entry:
     """A class that stores information about an entry
     and determines if it is a suitable for a target.
@@ -244,7 +246,7 @@ class Entry:
 class Cluster:
     bc40 = data_dir / 'raw/bc-40.out'
 
-    def __init__(self, entries: list) -> list:
+    def __init__(self, entries: list):
         cluster_list = []
         with open(self.bc40, 'r') as f:
             for line in f.readlines():
@@ -277,7 +279,7 @@ class Cluster:
                 extracted_cluster_list.append([extracted_cluster, len(cluster)])
         return extracted_cluster_list
 
-    def _pre_fetch_resolution_and_releasedate(self, pdb_ids: list) -> (list, list):
+    def _pre_fetch_resolution_and_releasedate(self, pdb_ids: list) -> Tuple[list, list]:
         """Fetch the resolution and release date of all entries before clustering in advance
 
         Args:
@@ -292,14 +294,14 @@ class Cluster:
         print(now(), 'Finish fetching')
         return resolutions, releasedates
 
-    def _get_resolution_and_releasedate_from_prefetched(self, pdb_ids: list) -> (list, list):
+    def _get_resolution_and_releasedate_from_prefetched(self, pdb_ids: list) -> Tuple[list, list]:
         """Get resolution and release date from pre-fetched information.
         """
         resolutions = [self.resolution_dict[pdb_id] for pdb_id in pdb_ids]
         releasedates = [self.releasedates_dict[pdb_id] for pdb_id in pdb_ids]
         return resolutions, releasedates
 
-    def _select_target_from_cluster(self, entries: list, num_entry_in_cluster: int) -> dict:
+    def _select_target_from_cluster(self, entries: list, num_entry_in_cluster: int) -> Union[dict, None]:
         """Select the target from the cluster.
         Retrieve the entries from the cluster in the order of best resolution
         and check if they are suitable for the target.
@@ -377,7 +379,7 @@ def main():
     targets = cluster.select_targets_from_each_cluster()
     print(len(targets))
     target_df = pd.DataFrame(targets)
-    output_csv = data_dir / 'interim/target_list.csv'
+    output_csv = data_dir / 'interim' / 'target_list.csv'
     target_df.to_csv(output_csv)
 
 
