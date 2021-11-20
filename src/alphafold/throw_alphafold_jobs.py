@@ -129,13 +129,14 @@ class ThrowJob:
 
 def make_fasta(entry_id: str, header: str, seq: str, fasta_dir: Path) -> Path:
     fasta_path = fasta_dir / (entry_id + '.fasta')
+    if fasta_path.exists():
+        return fasta_path
     with open(fasta_path, 'w') as f:
         f.write(header + '\n')
         len_line = 100
         for i in range((len(seq) - 1) // len_line + 1):
             f.write(seq[i * len_line: (i + 1) * len_line] + '\n')
         return fasta_path
-    return None
 
 
 def get_max_template_date_from_releasedate(releasedate: str):
