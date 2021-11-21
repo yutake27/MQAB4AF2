@@ -102,6 +102,11 @@ def main():
         # pdb directory
         target_pdb_dir = alphafold_output_dir / target
         # check if the AlphaFold execution was done successfully
+        alphafold_score_path = target_pdb_dir / 'scores.csv'
+        if not alphafold_score_path.exists():
+            print(f'{target}: AlphaFold execution has not completed yet')
+            # uncompleted_jobs += 1
+            continue
         if not_be_modeled(target_pdb_dir):
             final_target_list.remove(target)
             continue
@@ -112,7 +117,6 @@ def main():
         # throw job
         uncompleted_jobs += 1
         throw_job(target_pdb_dir, method, output_score_path, args.qsub, args.execute)
-
     # If all jobs are completed, concatenate scores
     if uncompleted_jobs == 0:
         print('All jobs are completed. Concatenating scores...')
