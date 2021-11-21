@@ -6,6 +6,7 @@ import argparse
 import datetime
 import math
 import subprocess
+import time
 from pathlib import Path
 from typing import List, Tuple
 
@@ -125,6 +126,8 @@ class ThrowJob:
             return
         cmd = qsub_header + cmd
         cls._throw_job_from_cmd(cmd, qsub)
+        if qsub and not resume:
+            time.sleep(12 * 60)  # Wait 12 minutes after job submission to avoid overloading the MMseqs2 server
 
 
 def make_fasta(entry_id: str, header: str, seq: str, fasta_dir: Path) -> Path:
