@@ -105,7 +105,7 @@ def main():
         alphafold_score_path = target_pdb_dir / 'scores.csv'
         if not alphafold_score_path.exists():
             print(f'{target}: AlphaFold execution has not completed yet')
-            # uncompleted_jobs += 1
+            uncompleted_jobs += 1
             continue
         if not_be_modeled(target_pdb_dir):
             final_target_list.remove(target)
