@@ -45,7 +45,7 @@ class ModelAccuracy:
             joblib.delayed(get_gdt)(model_pdb) for model_pdb in tqdm(list(Path(model_pdb_dir).glob('*.pdb')))
         )
 
-        df = pd.DataFrame(results, columns=['Model', 'GDT_TS', 'GDT_HA', 'TMscore'])
+        df = pd.DataFrame(results, columns=['Model', 'TMscore', 'GDT_TS', 'GDT_HA'])
         df = df.sort_index()
         return df
 
