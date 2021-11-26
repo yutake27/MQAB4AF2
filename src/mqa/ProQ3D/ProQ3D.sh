@@ -1,7 +1,7 @@
 #!/bin/bash
 #$ -cwd
 #$ -l q_node=1
-#$ -l h_rt=3:00:00
+#$ -l h_rt=6:00:00
 #$ -j y
 
 . /etc/profile.d/modules.sh
