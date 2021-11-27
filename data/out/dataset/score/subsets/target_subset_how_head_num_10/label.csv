@@ -1,4 +1,4 @@
-,Model,GDT_TS,GDT_HA,TMscore,Global_LDDT,Mean_LDDT,pLDDT,pTMscore,Tolerance,ModelName,Seed,Recycle,Ensemble,Target,Num_diff,Num_missing,Length
+,Model,TMscore,GDT_TS,GDT_HA,Global_LDDT,Mean_LDDT,pLDDT,pTMscore,Tolerance,ModelName,Seed,Recycle,Ensemble,Target,Num_diff,Num_missing,Length
 0,model_1_ptm_seed_0_rec_10_ens_1,0.8686,0.7723,0.6232,0.8875,0.8875760563380282,0.9536281971933204,0.8418342144853499,0.033136815,model_1_ptm,0,10,1,7BEJ_L,0,1,214
 1,model_1_ptm_seed_0_rec_10_ens_8,0.8662,0.7688,0.6197,0.889,0.8889239436619718,0.9534519876749517,0.841362352365323,0.015488505,model_1_ptm,0,10,8,7BEJ_L,0,1,214
 2,model_1_ptm_seed_0_rec_1_ens_1,0.8911,0.7864,0.635,0.89,0.8893272300469482,0.9452826485563294,0.8079829572139618,32.40665,model_1_ptm,0,1,1,7BEJ_L,0,1,214

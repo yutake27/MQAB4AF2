@@ -1,4 +1,4 @@
-,Model,GDT_TS,GDT_HA,TMscore,Target
+,Model,TMscore,GDT_TS,GDT_HA,Target
 0,model_1_ptm_seed_0_rec_10_ens_1_relaxed,0.8687,0.7723,0.6244,7BEJ_L
 1,model_1_ptm_seed_0_rec_10_ens_8_relaxed,0.866,0.77,0.6221,7BEJ_L
 2,model_1_ptm_seed_0_rec_1_ens_1_relaxed,0.8908,0.7887,0.6397,7BEJ_L
