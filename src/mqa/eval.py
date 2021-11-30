@@ -76,8 +76,8 @@ def get_whole_mse(df: pd.DataFrame, label_name: str, column_list: list) -> pd.Da
     return pd.DataFrame({label_name + ' MSE': mse_list}, index=column_list)
 
 
-def eval_get_df(df: pd.DataFrame, columns: List, label_name: str = 'GDT_TS',
-                threshold: float = 0, loss_how: str = 'mean') -> pd.DataFrame:
+def eval_get_df(df: pd.DataFrame, columns: List, label_name: str = 'GDT_TS', threshold: float = 0,
+                loss_how: str = 'mean', calc_random_loss: bool = True) -> pd.DataFrame:
     """Evaluate MQA performance for each target in a DataFrame.
 
     Args:
@@ -99,11 +99,16 @@ def eval_get_df(df: pd.DataFrame, columns: List, label_name: str = 'GDT_TS',
     loss = group.apply(lambda x: get_whole_loss(x, label_name, columns, how=loss_how)) * 100
     mae = group.apply(lambda x: get_whole_mae(x, label_name, columns))
     pef_df = pd.concat([pearson, spearman, loss, mae], axis=1).reset_index().rename(columns={'level_1': 'Method'})
+    if calc_random_loss:
+        random_loss = group.apply(lambda x: x[label_name].max() - x[label_name].mean()) * 100
+        random_loss_df = pd.DataFrame({f'{label_name} Loss': random_loss, 'Method': 'Random selection'}).reset_index()
+        pef_df = pd.concat([pef_df, random_loss_df], axis=0)
     print(len(group))
     return pef_df
 
 
-def eval(df: pd.DataFrame, columns: List, label_name: str = 'GDT_TS', threshold: float = 0, **kwargs) -> pd.DataFrame:
+def eval(df: pd.DataFrame, columns: List, label_name: str = 'GDT_TS',
+         threshold: float = 0, calc_random_loss: bool = True, **kwargs) -> pd.DataFrame:
     """Evaluate MQA performance for all targets in a DataFrame.
 
     Args:
@@ -118,6 +123,8 @@ def eval(df: pd.DataFrame, columns: List, label_name: str = 'GDT_TS', threshold:
     """
     pef_df = eval_get_df(df, columns=columns, label_name=label_name, threshold=threshold,
                          **kwargs).groupby('Method').mean().reset_index()
+    if calc_random_loss:
+        columns = columns + ['Random selection']
     order_dict = dict(zip(columns, range(len(columns))))
     pef_df['order'] = [order_dict[method] for method in pef_df['Method']]
     pef_df = pef_df.sort_values('order')
