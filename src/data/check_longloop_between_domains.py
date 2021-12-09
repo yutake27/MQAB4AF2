@@ -125,7 +125,8 @@ def has_longloop_between_domains(pdb_file: str, pad_residues: int = 10, threshol
     logger.debug(f'{resnums=}')
     logger.debug(f'{ss_array=}')
     mol = prody.parsePDB(pdb_file)
-    mol_ca = mol.select('ca resnum {}'.format(reduce(lambda a, b: a + ' ' + b, resnums)))
+    mol_ca = mol.select('name CA resnum {}'.format(reduce(lambda a, b: a + ' ' + b, resnums)))
+    logger.debug(f'{mol_ca.getResnums()=}')
     assert len(mol_ca) == len(ss_array)
     longloop_resindices = detect_long_loop(ss_array, padding=pad_residues, loop_ratio=threshold_loop_ratio)
     logger.debug(f'{longloop_resindices=}')
@@ -141,7 +142,8 @@ def has_longloop_between_domains(pdb_file: str, pad_residues: int = 10, threshol
     ('../../data/out/dataset/native_pdb/6XHV_1P.pdb', True),
     ('../../data/out/dataset/native_pdb/7C2G_G.pdb', True),
     ('../../data/out/dataset/native_pdb/7CF7_A.pdb', False),
-    ('../../data/out/dataset/native_pdb/6UVQ_A.pdb', False)
+    ('../../data/out/dataset/native_pdb/6UVQ_A.pdb', False),
+    ('../../data/out/dataset/native_pdb/6VO5_A.pdb', False)
 ])
 def test_exclude_target_with_longloop_between_domain(pdb_file, excluded, caplog):
     caplog.set_level(DEBUG)
