@@ -3,8 +3,9 @@ Select subsets of the target from target list.
 """
 
 import argparse
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 
 def get_target_subset(csv_path, how='eq_random', target_num=100, random_state=0) -> pd.DataFrame:
@@ -27,7 +28,7 @@ def get_target_subset(csv_path, how='eq_random', target_num=100, random_state=0)
     """
     df = pd.read_csv(csv_path, index_col=0)
     if how == 'random':
-        df_sample = df.sample(n=target_num, random_state=random_state)
+        df_sample = df.sample(n=target_num, random_state=random_state).head(target_num)
     elif how == 'eq_random':
         similar_df = df[df['is_similar_AF2'] == True]
         non_similar_df = df[df['is_similar_AF2'] == False]
