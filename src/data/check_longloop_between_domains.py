@@ -119,6 +119,7 @@ def has_longloop_between_domains(pdb_file: str, pad_residues: int = 10, threshol
     Returns:
         bool: True if there is long loop between domains
     """
+    logger.info(f'Checking long loop between domains in {pdb_file}')
     dssp_out = dssp(pdb_file)
     logger.debug(dssp_out)
     resnums, ss_array = parse_dssp_output(dssp_out)
@@ -130,10 +131,14 @@ def has_longloop_between_domains(pdb_file: str, pad_residues: int = 10, threshol
     assert len(mol_ca) == len(ss_array)
     longloop_resindices = detect_long_loop(ss_array, padding=pad_residues, loop_ratio=threshold_loop_ratio)
     logger.debug(f'{longloop_resindices=}')
+    longloop_resnums = np.array(resnums)[longloop_resindices]
+    logger.info(f'{longloop_resnums=}')
     num_contact_of_ll_residues = calc_num_contact_of_longloop_residues(mol_ca, longloop_resindices, threshold_dist)
-    logger.debug(f'{num_contact_of_ll_residues=}')
+    logger.info(f'{num_contact_of_ll_residues=}')
     assert len(longloop_resindices) == len(num_contact_of_ll_residues)
-    has_ll_with_low_contact = np.any(num_contact_of_ll_residues < threshold_num_contact)
+    low_contact_indices = np.where(num_contact_of_ll_residues < threshold_num_contact)[0]
+    resnums_low_contact = np.array(longloop_resnums)[low_contact_indices]
+    logger.info(f'{resnums_low_contact=}')
     return has_ll_with_low_contact
 
 
