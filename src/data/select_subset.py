@@ -7,6 +7,31 @@ from pathlib import Path
 
 import pandas as pd
 
+import check_longloop_between_domains
+
+
+def select_target_without_ll_between_domains_from_df(df: pd.DataFrame, target_num: int):
+    selected_targets = []
+    native_pdb_dir = Path('../../data/out/dataset/native_pdb')
+    for i, row in df.iterrows():
+        target_id = row['id']
+        native_pdb = native_pdb_dir / f'{target_id}.pdb'
+        has_ll_with_low_contact = check_longloop_between_domains.has_longloop_between_domains(str(native_pdb))
+        if not has_ll_with_low_contact:
+            selected_targets.append(row)
+        if len(selected_targets) == target_num:
+            break
+    return pd.DataFrame(selected_targets)
+
+
+def sample_target_from_df(df: pd.DataFrame, target_num: int, random_state: int,
+                          exclude_protein_with_ll_and_low_contact: bool = True) -> pd.DataFrame:
+    sample_df = df.sample(frac=1, random_state=random_state)
+    if not exclude_protein_with_ll_and_low_contact:
+        return sample_df.head(target_num)
+    else:
+        return select_target_without_ll_between_domains_from_df(sample_df, target_num)
+
 
 def get_target_subset(csv_path, how='eq_random', target_num=100, random_state=0) -> pd.DataFrame:
     """
@@ -32,8 +57,8 @@ def get_target_subset(csv_path, how='eq_random', target_num=100, random_state=0)
     elif how == 'eq_random':
         similar_df = df[df['is_similar_AF2'] == True]
         non_similar_df = df[df['is_similar_AF2'] == False]
-        similar_sample = similar_df.sample(frac=1, random_state=random_state).head(target_num // 2)
-        non_similar_sample = non_similar_df.sample(frac=1, random_state=random_state).head(target_num // 2)
+        similar_sample = sample_target_from_df(similar_df, target_num // 2, random_state=random_state)
+        non_similar_sample = sample_target_from_df(non_similar_df, target_num // 2, random_state=random_state)
         df_sample = pd.concat([similar_sample, non_similar_sample])
     elif how == 'head':
         df_sample = df.head(n=target_num)
