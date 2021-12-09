@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import prody
 import pytest
+import tqdm
 
 logger = getLogger(__name__)
 
@@ -160,7 +161,10 @@ def test_exclude_target_with_longloop_between_domain(pdb_file, excluded, caplog)
 if __name__ == '__main__':
     target_csv = '../../data/interim/target_subset_how_eq_random_num_300_seed_0.csv'
     df = pd.read_csv(target_csv, index_col=0)
-    for i, target_id in df['id'].iteritems():
+    excluded_targets = []
+    for i, row in tqdm.tqdm(df.iterrows(), total=len(df)):
+        target_id = row['id']
+        num_entry_in_cluster_af2_not_include = row['num_entry_in_cluster_AF2_notInclude']
         pdb_file = f'../../data/out/dataset/native_pdb/{target_id}.pdb'
         try:
             has_ll_with_low_contact = has_longloop_between_domains(pdb_file)
@@ -168,4 +172,6 @@ if __name__ == '__main__':
             print('AssertionError', pdb_file)
             break
         if has_ll_with_low_contact:
-            print(pdb_file)
+            excluded_targets.append((target_id, num_entry_in_cluster_af2_not_include))
+    print(len(excluded_targets))
+    print(f'{excluded_targets=}')
