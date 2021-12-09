@@ -6,7 +6,8 @@ Requirement:
 """
 
 import subprocess
-from typing import Any, List, Union
+from functools import reduce
+from typing import Any, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -28,19 +29,22 @@ def dssp(pdb_file: str) -> str:
     return dssp_out
 
 
-def parse_dssp_output(dssp_out: str) -> List[str]:
+def parse_dssp_output(dssp_out: str) -> Tuple[List[str], List[str]]:
     """parse dssp output and return a numpy array of secondary structure
 
     Args:
         dssp_out (str): dssp output
 
     Returns:
-        np.ndarray: Secondary structure array
+        List[int]: residue numbers
+        List[str]: Secondary structure array
     """
     lines = dssp_out.split('\n')
     lines = lines[28: -1]
-    ss_array = [line[16] for line in lines if line[13] != '!']
-    return ss_array
+    judge_misres = lambda line: line[13] == '!'
+    resnums = [line[5: 10].strip() for line in lines if not judge_misres(line)]
+    ss_array = [line[16] for line in lines if not judge_misres(line)]
+    return resnums, ss_array
 
 
 def get_ss_around_each_residue(ss_array: List[str], padding: int) -> np.ndarray:
@@ -113,9 +117,9 @@ def has_longloop_between_domains(pdb_file: str, pad_residues: int = 10, threshol
         bool: True if there is long loop between domains
     """
     dssp_out = dssp(pdb_file)
-    ss_array = parse_dssp_output(dssp_out)
+    resnums, ss_array = parse_dssp_output(dssp_out)
     mol = prody.parsePDB(pdb_file)
-    mol_ca = mol.select('ca')
+    mol_ca = mol.select('ca resnum {}'.format(reduce(lambda a, b: a + ' ' + b, resnums)))
     assert len(mol_ca) == len(ss_array)
     longloop_resindices = detect_long_loop(ss_array, padding=pad_residues, loop_ratio=threshold_loop_ratio)
     num_contact_of_ll_residues = calc_num_contact_of_longloop_residues(mol_ca, longloop_resindices, threshold_dist)
