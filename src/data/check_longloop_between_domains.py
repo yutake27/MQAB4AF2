@@ -1,5 +1,6 @@
 """
 Exclude proteins that are connected in long loops between domains from target candidates
+(Exclude proteins with long loops and few contact in a region)
 
 Requirement:
 - dssp version 3.0.0 (conda install -c salilab dssp)
@@ -101,7 +102,8 @@ def calc_num_contact_of_longloop_residues(mol_ca: prody.atomic, ll_resindices: n
 
 
 def has_longloop_between_domains(pdb_file: str, pad_residues: int = 10, threshold_loop_ratio: float = 0.7,
-                                 threshold_dist: float = 10, threshold_num_contact: int = 10) -> np.bool_:
+                                 threshold_dist: float = 10, threshold_num_contact: int = 10,
+                                 threshold_num_res_low_contact: int = 1) -> np.bool_:
     """check if there is long loop between domains
 
     Procedure:
@@ -116,6 +118,8 @@ def has_longloop_between_domains(pdb_file: str, pad_residues: int = 10, threshol
         threshold_loop_ratio (float): percentage of loop to judge as long loop
         threshold_dist (float): threshold distance to be considered as contact
         threshold_num_contact (int): threshold number of contact to judge long loop between domains
+        threshold_num_res_low_contact (int):
+        threshold number of residues to be considered as long loop with low contact
 
     Returns:
         bool: True if there is long loop between domains
@@ -134,12 +138,17 @@ def has_longloop_between_domains(pdb_file: str, pad_residues: int = 10, threshol
     logger.debug(f'{longloop_resindices=}')
     longloop_resnums = np.array(resnums)[longloop_resindices]
     logger.info(f'{longloop_resnums=}')
-    num_contact_of_ll_residues = calc_num_contact_of_longloop_residues(mol_ca, longloop_resindices, threshold_dist)
+    num_contact_of_ll_residues = calc_num_contact_of_longloop_residues(
+        mol_ca, longloop_resindices, threshold_dist
+    )
     logger.info(f'{num_contact_of_ll_residues=}')
     assert len(longloop_resindices) == len(num_contact_of_ll_residues)
     low_contact_indices = np.where(num_contact_of_ll_residues < threshold_num_contact)[0]
     resnums_low_contact = np.array(longloop_resnums)[low_contact_indices]
     logger.info(f'{resnums_low_contact=}')
+    has_ll_with_low_contact = np.sum(
+        num_contact_of_ll_residues < threshold_num_contact
+    ) > threshold_num_res_low_contact
     return has_ll_with_low_contact
 
 
