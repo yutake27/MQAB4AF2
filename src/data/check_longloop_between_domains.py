@@ -7,12 +7,15 @@ Requirement:
 
 import subprocess
 from functools import reduce
+from logging import DEBUG, getLogger
 from typing import Any, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import prody
 import pytest
+
+logger = getLogger(__name__)
 
 
 def dssp(pdb_file: str) -> str:
@@ -117,23 +120,31 @@ def has_longloop_between_domains(pdb_file: str, pad_residues: int = 10, threshol
         bool: True if there is long loop between domains
     """
     dssp_out = dssp(pdb_file)
+    logger.debug(dssp_out)
     resnums, ss_array = parse_dssp_output(dssp_out)
+    logger.debug(f'{resnums=}')
+    logger.debug(f'{ss_array=}')
     mol = prody.parsePDB(pdb_file)
     mol_ca = mol.select('ca resnum {}'.format(reduce(lambda a, b: a + ' ' + b, resnums)))
     assert len(mol_ca) == len(ss_array)
     longloop_resindices = detect_long_loop(ss_array, padding=pad_residues, loop_ratio=threshold_loop_ratio)
+    logger.debug(f'{longloop_resindices=}')
     num_contact_of_ll_residues = calc_num_contact_of_longloop_residues(mol_ca, longloop_resindices, threshold_dist)
-    has_longloop = np.any(num_contact_of_ll_residues < threshold_num_contact)
-    return has_longloop
+    logger.debug(f'{num_contact_of_ll_residues=}')
+    assert len(longloop_resindices) == len(num_contact_of_ll_residues)
+    has_ll_with_low_contact = np.any(num_contact_of_ll_residues < threshold_num_contact)
+    return has_ll_with_low_contact
 
 
 @pytest.mark.parametrize(('pdb_file', 'excluded'), [
     ('../../data/out/dataset/native_pdb/6IA5_D.pdb', True),
     ('../../data/out/dataset/native_pdb/6XHV_1P.pdb', True),
     ('../../data/out/dataset/native_pdb/7C2G_G.pdb', True),
-    ('../../data/out/dataset/native_pdb/7CF7_A.pdb', False)
+    ('../../data/out/dataset/native_pdb/7CF7_A.pdb', False),
+    ('../../data/out/dataset/native_pdb/6UVQ_A.pdb', False)
 ])
-def test_exclude_target_with_longloop_between_domain(pdb_file, excluded):
+def test_exclude_target_with_longloop_between_domain(pdb_file, excluded, caplog):
+    caplog.set_level(DEBUG)
     """test long loop detection"""
     be_excluded = has_longloop_between_domains(pdb_file)
     assert be_excluded == excluded
