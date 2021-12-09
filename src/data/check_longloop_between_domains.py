@@ -9,6 +9,7 @@ import subprocess
 from typing import Any, List, Union
 
 import numpy as np
+import pandas as pd
 import prody
 import pytest
 
@@ -135,11 +136,14 @@ def test_exclude_target_with_longloop_between_domain(pdb_file, excluded):
 
 
 if __name__ == '__main__':
-    sample_pdbs = [
-        '../../data/out/dataset/native_pdb/6IA5_D.pdb',
-        '../../data/out/dataset/native_pdb/6XHV_1P.pdb',
-        '../../data/out/dataset/native_pdb/7C2G_G.pdb',
-        '../../data/out/dataset/native_pdb/7CF7_A.pdb'
-    ]
-    for sample_pdb in sample_pdbs:
-        print(sample_pdb, has_longloop_between_domains(sample_pdb))
+    target_csv = '../../data/interim/target_subset_how_eq_random_num_300_seed_0.csv'
+    df = pd.read_csv(target_csv, index_col=0)
+    for i, target_id in df['id'].iteritems():
+        pdb_file = f'../../data/out/dataset/native_pdb/{target_id}.pdb'
+        try:
+            has_ll_with_low_contact = has_longloop_between_domains(pdb_file)
+        except AssertionError:
+            print('AssertionError', pdb_file)
+            break
+        if has_ll_with_low_contact:
+            print(pdb_file)
