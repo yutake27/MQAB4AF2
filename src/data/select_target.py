@@ -338,13 +338,13 @@ class Cluster:
         db_path = data_dir / 'interim' / 'db' / 'targets.db'
         db_path.parent.mkdir(parents=True, exist_ok=True)
         con = sqlite3.connect(db_path)
-        print('Selected targets\n', pd.read_sql_query('SELECT * FROM targets', con))
         cur = con.cursor()
         cur.execute("""CREATE TABLE IF NOT EXISTS targets(
                         cluster_index INT, id TEXT, resolution REAL, releasedate TEXT,
                         num_entry_in_cluster INT, num_entry_in_cluster_AF2_notInclude INT
                     )""")
         con.commit()
+        print('Selected targets\n', pd.read_sql_query('SELECT * FROM targets', con))
         for i, (extracted_entries, all_entries) in enumerate(tqdm(self.clusters, desc='Select target from cluster')):
             cache_exist = cur.execute('SELECT * FROM targets WHERE cluster_index = ?', (i,)).fetchone()
             if cache_exist:
