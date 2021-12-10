@@ -73,7 +73,8 @@ class GraphQL:
                  'rcsb_accession_info{initial_release_date}}}')
         variables = {'ids': pdb_ids}
         res_json = GraphQL.post(query, variables)
-        resolutions = [ent['rcsb_entry_info']['resolution_combined'][0] for ent in res_json['data']['entries']]
+        resolutions = [res[0] if (res := ent['rcsb_entry_info']['resolution_combined']) is not None else None
+                       for ent in res_json['data']['entries']]
         releasedates = [ent['rcsb_accession_info']['initial_release_date']
                         for ent in res_json['data']['entries']]
         assert len(pdb_ids) == len(resolutions)
