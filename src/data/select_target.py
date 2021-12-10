@@ -68,18 +68,20 @@ class GraphQL:
         return res.json()
 
     @classmethod
-    def fetch_resolution_and_releasedate(cls, pdb_ids: list) -> Tuple[list, list]:
-        query = ('query($ids: [String!]!){entries(entry_ids: $ids){rcsb_entry_info{resolution_combined},' +
+    def fetch_resolution_and_releasedate(cls, pdb_ids: list) -> Tuple[list, list, list]:
+        query = ('query($ids: [String!]!){entries(entry_ids: $ids){entry{id}, rcsb_entry_info{resolution_combined},' +
                  'rcsb_accession_info{initial_release_date}}}')
         variables = {'ids': pdb_ids}
         res_json = GraphQL.post(query, variables)
+        ids = [entry['entry']['id'] for entry in res_json['data']['entries']]
         resolutions = [res[0] if (res := ent['rcsb_entry_info']['resolution_combined']) is not None else None
                        for ent in res_json['data']['entries']]
         releasedates = [ent['rcsb_accession_info']['initial_release_date']
                         for ent in res_json['data']['entries']]
-        assert len(pdb_ids) == len(resolutions)
-        assert len(pdb_ids) == len(releasedates)
-        return resolutions, releasedates
+        if len(pdb_ids) != len(resolutions):
+            print('Warning! Not found entry', set(pdb_ids) - set(ids))
+        time.sleep(0.5)
+        return ids, resolutions, releasedates
 
 
 class SearchSequence:
