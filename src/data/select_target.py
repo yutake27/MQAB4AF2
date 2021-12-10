@@ -194,7 +194,6 @@ class CheckNative:
             _remove_files()
             return False
         if (num_missing / length) > 0.2:
-            _remove_files()
             return False
         return True
 
@@ -257,9 +256,6 @@ class Cluster:
         self.origin_clusters: list = cluster_list
         self.clusters: list = self._clustering(entries)
         self.ss = SearchSequence(entries)
-        resolutions, releasedates = self._pre_fetch_resolution_and_releasedate(entries)
-        self.resolution_dict = {ent: resolution for ent, resolution in zip(entries, resolutions)}
-        self.releasedates_dict = {ent: releasedate for ent, releasedate in zip(entries, releasedates)}
 
     def _clustering(self, entries: list) -> list:
         """Split entries into cluster based on bc-40
@@ -279,63 +275,55 @@ class Cluster:
                 if ent[: 4] in entry_set:
                     extracted_cluster.append(ent)
             if len(extracted_cluster) > 0:
-                extracted_cluster_list.append([extracted_cluster, len(cluster)])
+                extracted_cluster_list.append([extracted_cluster, cluster])
         return extracted_cluster_list
 
-    def _pre_fetch_resolution_and_releasedate(self, pdb_ids: list) -> Tuple[list, list]:
-        """Fetch the resolution and release date of all entries before clustering in advance
+    def _get_num_entry_after_training_deadline(self, release_dates: list, deadline='2018-04-30') -> int:
+        """Get the number of entries after the training deadline in the cluster"""
+        release_dates_ = np.array([np.datetime64(date[:10]) for date in release_dates])
+        deadline_ = np.datetime64(deadline)
+        return int(np.sum(release_dates_ > deadline_))
 
-        Args:
-            pdb_ids (list): List of pdb id.
-
-        Returns:
-            list: List of resolution.
-            list: List of release date.
-        """
-        print(now(), 'Fetch resolution and release date')
-        resolutions, releasedates = GraphQL.fetch_resolution_and_releasedate(pdb_ids)
-        print(now(), 'Finish fetching')
-        return resolutions, releasedates
-
-    def _get_resolution_and_releasedate_from_prefetched(self, pdb_ids: list) -> Tuple[list, list]:
-        """Get resolution and release date from pre-fetched information.
-        """
-        resolutions = [self.resolution_dict[pdb_id] for pdb_id in pdb_ids]
-        releasedates = [self.releasedates_dict[pdb_id] for pdb_id in pdb_ids]
-        return resolutions, releasedates
-
-    def _select_target_from_cluster(self, entries: list, num_entry_in_cluster: int) -> Union[dict, None]:
+    def _select_target_from_cluster(self, new_entries: list, all_entries: list) -> Union[dict, None]:
         """Select the target from the cluster.
         Retrieve the entries from the cluster in the order of best resolution
         and check if they are suitable for the target.
 
         Args:
-            entries (list): List of entry.
-            num_entry_in_cluster (int): Total number of entries in the cluster.
+            new_entries (list): List of entry in the cluster after training deadline.
+            all_entries (list): List of all entries in the cluster.
 
         Returns:
             dict: Dict of target information (entry_id, resolution, sequence, size of cluster.)
             If there is no suitable entry, return None.
         """
-        pdb_ids = [ent[: 4] for ent in entries]
-        resolutions, releasedates = self._get_resolution_and_releasedate_from_prefetched(pdb_ids)
+        pdb_ids = [ent[: 4] for ent in new_entries]
+        all_pdb_ids_ = list(set([ent[: 4] for ent in all_entries]))
+        all_pdb_ids, all_resolutions, all_releasedates = GraphQL.fetch_resolution_and_releasedate(all_pdb_ids_)
+        resolution_dict = {pdb_id: resolution for pdb_id, resolution in zip(all_pdb_ids, all_resolutions)}
+        releasedate_dict = {pdb_id: releasedate for pdb_id, releasedate in zip(all_pdb_ids, all_releasedates)}
+        resolutions = [resolution_dict[pdb_id] for pdb_id in pdb_ids]
+        releasedates = [releasedate_dict[pdb_id] for pdb_id in pdb_ids]
+        num_entry_after_training_deadline = self._get_num_entry_after_training_deadline(releasedates)
         indices = np.argsort(resolutions)
         for index in indices:
-            entry_id, resolution, releasedate = entries[index], resolutions[index], releasedates[index]
+            entry_id, resolution, releasedate = new_entries[index], resolutions[index], releasedates[index]
             header, sequence = self.ss.search_sequence(entry_id)
-            entry = Entry(entry_id, resolution, releasedate, header, sequence, num_entry_in_cluster, len(entries))
+            entry = Entry(entry_id, resolution, releasedate, header, sequence,
+                          len(all_entries), num_entry_after_training_deadline)
             if entry.check_entry():
                 return entry.get_all_attribute()
         return None
 
-    def _get_target_info_by_name(self, target_name: str, num_entry_in_cluster: int,
-                                 num_entry_in_cluster_AF2_notInclude: int) -> dict:
+    def _get_target_info_from_cache(self, chache: list) -> dict:
         """Get target information by name.
         """
-        pdb_id = target_name[: 4]
-        resolution = self.resolution_dict[pdb_id]
-        releasedate = self.releasedates_dict[pdb_id]
+        target_name = chache[1]
+        resolution = chache[2]
+        releasedate = chache[3]
         header, sequence = self.ss.search_sequence(target_name)
+        num_entry_in_cluster = chache[4]
+        num_entry_in_cluster_AF2_notInclude = chache[5]
         entry = Entry(target_name, resolution, releasedate, header, sequence,
                       num_entry_in_cluster, num_entry_in_cluster_AF2_notInclude)
         return entry.get_all_attribute()
@@ -350,24 +338,32 @@ class Cluster:
         db_path = data_dir / 'interim' / 'db' / 'targets.db'
         db_path.parent.mkdir(parents=True, exist_ok=True)
         con = sqlite3.connect(db_path)
+        print('Selected targets\n', pd.read_sql_query('SELECT * FROM targets', con))
         cur = con.cursor()
-        cur.execute('CREATE TABLE IF NOT EXISTS targets(cluster_index INT, id TEXT)')
+        cur.execute("""CREATE TABLE IF NOT EXISTS targets(
+                        cluster_index INT, id TEXT, resolution REAL, releasedate TEXT,
+                        num_entry_in_cluster INT, num_entry_in_cluster_AF2_notInclude INT
+                    )""")
         con.commit()
-        for i, (entries, num_entry_in_cluster) in enumerate(tqdm(self.clusters, desc='Select target from cluster')):
+        for i, (extracted_entries, all_entries) in enumerate(tqdm(self.clusters, desc='Select target from cluster')):
             cache_exist = cur.execute('SELECT * FROM targets WHERE cluster_index = ?', (i,)).fetchone()
             if cache_exist:
                 target_name = cache_exist[1]
                 if target_name is None:
                     continue
-                target = self._get_target_info_by_name(target_name, num_entry_in_cluster, len(entries))
+                target = self._get_target_info_from_cache(cache_exist)
                 targets.append(target)
             else:
-                target = self._select_target_from_cluster(entries, num_entry_in_cluster)
+                target = self._select_target_from_cluster(extracted_entries, all_entries)
                 if target is None:
-                    cur.execute("""INSERT INTO targets VALUES(?, ?)""", (i, None))
+                    cur.execute("""INSERT INTO targets VALUES(?, ?, ?, ?, ?, ?)""",
+                                (i, None, None, None, None, None))
                 else:
                     targets.append(target)
-                    cur.execute("""INSERT INTO targets VALUES(?, ?)""", (i, target['id']))
+                    cur.execute("""INSERT INTO targets VALUES(?, ?, ?, ?, ?, ?)""", (
+                        i, target['id'], target['resolution'], target['releasedate'],
+                        target['num_entry_in_cluster'], target['num_entry_in_cluster_AF2_notInclude']
+                    ))
                 con.commit()
         con.close()
         return targets
