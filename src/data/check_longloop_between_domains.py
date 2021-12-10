@@ -97,13 +97,13 @@ def calc_num_contact_of_longloop_residues(mol_ca: prody.atomic, ll_resindices: n
     """
     dist_mat = prody.buildDistMatrix(mol_ca)
     dist_ll_res = dist_mat[ll_resindices]
-    num_res_around_ll_residues = np.count_nonzero(dist_ll_res < threshold_dist, axis=1)
+    num_res_around_ll_residues = np.count_nonzero(dist_ll_res < threshold_dist, axis=1) - 1  # except itself
     return num_res_around_ll_residues
 
 
 def has_longloop_between_domains(pdb_file: str, pad_residues: int = 10, threshold_loop_ratio: float = 0.7,
-                                 threshold_dist: float = 10, threshold_num_contact: int = 10,
-                                 threshold_num_res_low_contact: int = 1) -> np.bool_:
+                                 threshold_dist: float = 10, threshold_num_contact: int = 8,
+                                 threshold_num_res_low_contact: int = 2) -> np.bool_:
     """check if there is long loop between domains
 
     Procedure:
@@ -143,12 +143,12 @@ def has_longloop_between_domains(pdb_file: str, pad_residues: int = 10, threshol
     )
     logger.info(f'{num_contact_of_ll_residues=}')
     assert len(longloop_resindices) == len(num_contact_of_ll_residues)
-    low_contact_indices = np.where(num_contact_of_ll_residues < threshold_num_contact)[0]
+    low_contact_indices = np.where(num_contact_of_ll_residues <= threshold_num_contact)[0]
     resnums_low_contact = np.array(longloop_resnums)[low_contact_indices]
     logger.info(f'{resnums_low_contact=}')
     has_ll_with_low_contact = np.sum(
-        num_contact_of_ll_residues < threshold_num_contact
-    ) > threshold_num_res_low_contact
+        num_contact_of_ll_residues <= threshold_num_contact
+    ) >= threshold_num_res_low_contact
     return has_ll_with_low_contact
 
 
