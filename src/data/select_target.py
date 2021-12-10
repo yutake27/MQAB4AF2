@@ -75,12 +75,12 @@ class GraphQL:
                  'rcsb_accession_info{initial_release_date}}}')
         variables = {'ids': pdb_ids}
         res_json = GraphQL.post(query, variables)
-        ids = [entry['entry']['id'] for entry in res_json['data']['entries']]
+        ids = [entry['entry']['id'] for entry in res_json['data']['entries']]  # fetch id in the case of not found
         resolutions = [res[0] if (res := ent['rcsb_entry_info']['resolution_combined']) is not None else None
                        for ent in res_json['data']['entries']]
         releasedates = [ent['rcsb_accession_info']['initial_release_date']
                         for ent in res_json['data']['entries']]
-        if len(pdb_ids) != len(resolutions):
+        if len(pdb_ids) != len(resolutions):  # Entries cannot be found if they have been deleted or something
             print('Warning! Not found entry', set(pdb_ids) - set(ids))
         time.sleep(0.5)
         return ids, resolutions, releasedates
@@ -302,7 +302,7 @@ class Cluster:
             If there is no suitable entry, return None.
         """
         pdb_ids = [ent[: 4] for ent in new_entries]
-        all_pdb_ids_ = list(set([ent[: 4] for ent in all_entries]))
+        all_pdb_ids_ = list(set([ent[: 4] for ent in all_entries]))  # remove duplicated pdb_ids
         all_pdb_ids, all_resolutions, all_releasedates = GraphQL.fetch_resolution_and_releasedate(all_pdb_ids_)
         resolution_dict = {pdb_id: resolution for pdb_id, resolution in zip(all_pdb_ids, all_resolutions)}
         releasedate_dict = {pdb_id: releasedate for pdb_id, releasedate in zip(all_pdb_ids, all_releasedates)}
@@ -320,7 +320,7 @@ class Cluster:
         return None
 
     def _get_target_info_from_cache(self, chache: list) -> dict:
-        """Get target information by name.
+        """Get target information from cache in db.
         """
         target_name = chache[1]
         resolution = chache[2]
