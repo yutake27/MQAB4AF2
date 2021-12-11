@@ -302,19 +302,21 @@ class Cluster:
             If there is no suitable entry, return None.
         """
         pdb_ids = [ent[: 4] for ent in new_entries]
-        all_pdb_ids_ = list(set([ent[: 4] for ent in all_entries]))  # remove duplicated pdb_ids
-        all_pdb_ids, all_resolutions, all_releasedates = GraphQL.fetch_resolution_and_releasedate(all_pdb_ids_)
-        resolution_dict = {pdb_id: resolution for pdb_id, resolution in zip(all_pdb_ids, all_resolutions)}
-        releasedate_dict = {pdb_id: releasedate for pdb_id, releasedate in zip(all_pdb_ids, all_releasedates)}
+        all_pdb_ids = [ent[: 4] for ent in all_entries]
+        all_pdb_ids_set = list(set(all_pdb_ids))  # remove duplicated pdb_ids
+        all_pdb_ids_, all_resolutions_, all_releasedates_ = GraphQL.fetch_resolution_and_releasedate(all_pdb_ids_set)
+        resolution_dict = {pdb_id: resolution for pdb_id, resolution in zip(all_pdb_ids_, all_resolutions_)}
+        releasedate_dict = {pdb_id: releasedate for pdb_id, releasedate in zip(all_pdb_ids_, all_releasedates_)}
         resolutions = [resolution_dict[pdb_id] for pdb_id in pdb_ids]
         releasedates = [releasedate_dict[pdb_id] for pdb_id in pdb_ids]
-        num_entry_after_training_deadline = self._get_num_entry_after_training_deadline(releasedates)
+        all_releasedates = [releasedate_dict[pdb_id] for pdb_id in all_pdb_ids if pdb_id in releasedate_dict]
+        num_entry_after_training_deadline = self._get_num_entry_after_training_deadline(all_releasedates)
         indices = np.argsort(resolutions)
         for index in indices:
             entry_id, resolution, releasedate = new_entries[index], resolutions[index], releasedates[index]
             header, sequence = self.ss.search_sequence(entry_id)
             entry = Entry(entry_id, resolution, releasedate, header, sequence,
-                          len(all_entries), num_entry_after_training_deadline)
+                          len(all_releasedates), num_entry_after_training_deadline)
             if entry.check_entry():
                 return entry.get_all_attribute()
         return None
