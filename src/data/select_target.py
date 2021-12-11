@@ -82,7 +82,7 @@ class GraphQL:
                         for ent in res_json['data']['entries']]
         if len(pdb_ids) != len(resolutions):  # Entries cannot be found if they have been deleted or something
             print('Warning! Not found entry', set(pdb_ids) - set(ids))
-        time.sleep(0.5)
+        time.sleep(1.0)
         return ids, resolutions, releasedates
 
 
