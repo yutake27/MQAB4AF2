@@ -50,7 +50,7 @@ class DetermineJobParams:
             },
         }
         estimated_hour = (fitting_params[ensemble]['s'] * length + fitting_params[ensemble]['i']) * 24
-        spare_hour = 0.5
+        spare_hour = 1.5
         total_time = estimated_hour + spare_hour
         if resume:
             total_time /= resume_divider
@@ -127,7 +127,7 @@ class ThrowJob:
         cmd = qsub_header + cmd
         cls._throw_job_from_cmd(cmd, qsub)
         if qsub and not resume:
-            time.sleep(12 * 60)  # Wait 12 minutes after job submission to avoid overloading the MMseqs2 server
+            time.sleep(10 * 60)  # Wait some minutes after job submission to avoid overloading the MMseqs2 server
 
 
 def make_fasta(entry_id: str, header: str, seq: str, fasta_dir: Path) -> Path:
