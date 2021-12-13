@@ -15,8 +15,6 @@ import pandas as pd
 import requests
 from tqdm import tqdm
 
-import check_longloop_between_domains
-
 sys.path.append('../alphafold/util/')
 from download_native_pdb import DownloadProtein
 
@@ -196,8 +194,6 @@ class CheckNative:
             _remove_files()
             return False
         if (num_missing / length) > 0.2:
-            return False
-        if check_longloop_between_domains.has_longloop_between_domains(str(pdb_path)):
             return False
         return True
 
