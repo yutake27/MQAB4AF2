@@ -142,7 +142,6 @@ class ThrowJob:
         output_target_dir = output_dir / entry_id
         output_score_path = output_target_dir / 'scores.csv'
         if output_score_path.exists() and not runall:  # check if the output file already exists
-            print(f'{entry_id} already done')
             tar_pkl_path = output_target_dir / 'model_pickle.tar.gz'
             if not tar_pkl_path.exists():  # check if post processing is done
                 cmd = ['python', 'post_process.py', f'{output_target_dir}']
@@ -157,7 +156,7 @@ class ThrowJob:
         else:
             ensemble = 'noens'
         # Determine the time required to run the job
-        resume: bool = (output_target_dir / 'msa.pickle').exists()
+        resume: bool = len(list(output_target_dir.glob('*.pdb'))) > 100
         qsub_time = DetermineJobParams.estimate_time_from_length(length, ensemble, resume)
         qsub_header = ['qsub', '-g', 'tga-ishidalab', '-l', f'h_rt={qsub_time}', '-N', f'af_{entry_id}_{length}']
         if method == 'alphafold':
