@@ -158,7 +158,10 @@ def has_longloop_between_domains(pdb_file: str, pad_residues: int = 10, threshol
     ('../../data/out/dataset/native_pdb/7C2G_G.pdb', True),
     ('../../data/out/dataset/native_pdb/7CF7_A.pdb', False),
     ('../../data/out/dataset/native_pdb/6UVQ_A.pdb', False),
-    ('../../data/out/dataset/native_pdb/6VO5_A.pdb', False)
+    ('../../data/out/dataset/native_pdb/6VO5_A.pdb', False),
+    ('../../data/out/dataset/native_pdb/6JQ1_A.pdb', True),
+    ('../../data/out/dataset/native_pdb/6TJF_C.pdb', True),
+    ('../../data/out/dataset/native_pdb/6FF6_A.pdb', True)
 ])
 def test_exclude_target_with_longloop_between_domain(pdb_file, excluded, caplog):
     caplog.set_level(DEBUG)
