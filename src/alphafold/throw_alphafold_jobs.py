@@ -70,6 +70,51 @@ class DetermineJobParams:
             return False
 
 
+class checkSubmittedJob:
+    def __init__(self):
+        self.submitted_job_targets = self._get_submitted_job_targets()
+
+    @staticmethod
+    def _qstat() -> List[str]:
+        """Return job id list"""
+        cmd = ['qstat']
+        qstat_result = subprocess.run(cmd, capture_output=True, text=True).stdout
+        job_ids = [line.split()[0] for line in qstat_result.split('\n')[2: -1]]
+        return job_ids
+
+    @staticmethod
+    def _stat_j(job_id: str) -> str:
+        """Return target name"""
+        cmd = ['qstat', '-j', job_id]
+        qstat_j_result = subprocess.run(cmd, capture_output=True, text=True).stdout
+        qstat_j_result_line = qstat_j_result.split('\n')
+        job_name_line = list(filter(lambda x: x.startswith('job_name'), qstat_j_result_line))[0]
+        ar_id_line = list(filter(lambda x: x.startswith('ar_id'), qstat_j_result_line))
+        print(job_name_line, ar_id_line[0] if ar_id_line else '')
+        job_name = job_name_line.split()[1]
+        target_name = job_name.split('_', 1)[1].rsplit('_', 1)[0]
+        return target_name
+
+    @classmethod
+    def _get_submitted_job_targets(cls) -> List[str]:
+        """Return target name list"""
+        job_ids = cls._qstat()
+        target_names = [cls._stat_j(job_id) for job_id in job_ids]
+        return target_names
+
+    def check_submitted_jobs(self, target_name: str) -> bool:
+        """
+        Check whether the job of the target is submitted or not.
+
+        Args:
+        target_name (str): Name of the target.
+
+        Returns:
+            bool: Whether the job is submitted or not.
+        """
+        return target_name in self.submitted_job_targets
+
+
 class ThrowJob:
     @staticmethod
     def _throw_job_from_cmd(cmd: List, qsub=False):
@@ -128,6 +173,14 @@ class ThrowJob:
         cls._throw_job_from_cmd(cmd, qsub)
         if qsub and not resume:
             time.sleep(10 * 60)  # Wait some minutes after job submission to avoid overloading the MMseqs2 server
+
+    @classmethod
+    def throw_job_for_target_df(cls, df: pd.DataFrame, **kwargs) -> None:
+        crj = checkSubmittedJob()
+        for index, row in df.iterrows():
+            target_name = str(row['id'])
+            if not crj.check_submitted_jobs(target_name):
+                cls.throw_job(row, **kwargs)
 
 
 def make_fasta(entry_id: str, header: str, seq: str, fasta_dir: Path) -> Path:
@@ -203,8 +256,8 @@ def main():
     df = pd.read_csv(target_list_path, index_col=0)
     num_targets = num_targets if num_targets > 0 else len(df)
     df = df[: num_targets]
-    for index, row in df.iterrows():
-        ThrowJob.throw_job(row, fasta_dir, output_alphafold_dir, method, qsub, runall)
+    ThrowJob.throw_job_for_target_df(df, fasta_dir=fasta_dir, output_dir=output_alphafold_dir,
+                                     method=method, qsub=qsub, runall=runall)
 
 
 if __name__ == '__main__':
