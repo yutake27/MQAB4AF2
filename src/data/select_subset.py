@@ -7,8 +7,35 @@ from pathlib import Path
 
 import pandas as pd
 
+import detect_low_interaction_region
 
-def get_target_subset(csv_path, how='eq_random', target_num=100, random_state=0) -> pd.DataFrame:
+native_pdb_dir = Path('../../data/out/dataset/native_pdb')
+
+
+def select_target_without_low_interaction_region_from_df(df: pd.DataFrame, target_num: int):
+    selected_targets = []
+    for i, row in df.iterrows():
+        target_id = row['id']
+        native_pdb = native_pdb_dir / f'{target_id}.pdb'
+        has_low_interaction_region = detect_low_interaction_region.has_low_interaction_region(str(native_pdb))
+        if not has_low_interaction_region:
+            selected_targets.append(row)
+        if len(selected_targets) == target_num:
+            break
+    return pd.DataFrame(selected_targets)
+
+
+def sample_target_from_df(df: pd.DataFrame, target_num: int, random_state: int,
+                          exclude_protein_with_ll_and_low_contact: bool = True) -> pd.DataFrame:
+    sample_df = df.sample(frac=1, random_state=random_state)
+    if not exclude_protein_with_ll_and_low_contact:
+        return sample_df.head(target_num)
+    else:
+        return select_target_without_low_interaction_region_from_df(sample_df, target_num)
+
+
+def get_target_subset(csv_path: Path, how: str = 'eq_random', exclude: bool = False,
+                      target_num: int = 100, random_state: int = 0) -> pd.DataFrame:
     """
     Select subsets of the target from target list.
 
@@ -21,6 +48,7 @@ def get_target_subset(csv_path, how='eq_random', target_num=100, random_state=0)
             that have similar sequence to AF2 traingin dataset and that have not.
             head: select the first target_num targets.
             tail: select the last target_num targets.
+        exclude (bool): exclude target with low interaction region.
         target_num (int): number of target to select.
         random_state (int): random seed.
     Returns:
@@ -28,12 +56,12 @@ def get_target_subset(csv_path, how='eq_random', target_num=100, random_state=0)
     """
     df = pd.read_csv(csv_path, index_col=0)
     if how == 'random':
-        df_sample = df.sample(n=target_num, random_state=random_state).head(target_num)
+        df_sample = sample_target_from_df(df, target_num, random_state)
     elif how == 'eq_random':
         similar_df = df[df['is_similar_AF2'] == True]
         non_similar_df = df[df['is_similar_AF2'] == False]
-        similar_sample = similar_df.sample(frac=1, random_state=random_state).head(target_num // 2)
-        non_similar_sample = non_similar_df.sample(frac=1, random_state=random_state).head(target_num // 2)
+        similar_sample = sample_target_from_df(similar_df, target_num // 2, random_state=random_state)
+        non_similar_sample = sample_target_from_df(non_similar_df, target_num // 2, random_state=random_state)
         df_sample = pd.concat([similar_sample, non_similar_sample])
     elif how == 'head':
         df_sample = df.head(n=target_num)
@@ -59,6 +87,8 @@ def main():
                         head: select the first target_num targets of the target list.
                         tail: select the last target_num targets of the target list.
                         """)
+    parser.add_argument('--exclude_target', '-e', action='store_true',
+                        help='exclude target with low interaction region')
     parser.add_argument('--target_num', type=int, default=100, help='number of target to select')
     parser.add_argument('--random_state', type=int, default=0)
     parser.add_argument('-o', '--output_csv_path', type=str, default='',
