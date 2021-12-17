@@ -79,7 +79,9 @@ class checkSubmittedJob:
         """Return job id list"""
         cmd = ['qstat']
         qstat_result = subprocess.run(cmd, capture_output=True, text=True).stdout
-        job_ids = [line.split()[0] for line in qstat_result.split('\n')[2: -1]]
+        qstat_result_lines = qstat_result.split('\n')[2: -1]
+        qstat_result_lines_filter = list(filter(lambda line: 'af_' in line, qstat_result_lines))
+        job_ids = [line.split()[0] for line in qstat_result_lines_filter]
         return job_ids
 
     @staticmethod
