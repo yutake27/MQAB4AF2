@@ -87,6 +87,10 @@ def has_low_interaction_region(pdb_file: str, contact_threshold: int = 12,
     ('../../data/out/dataset/native_pdb/7CHU_A.pdb', True),
     ('../../data/out/dataset/native_pdb/6UVQ_A.pdb', False),
     ('../../data/out/dataset/native_pdb/6VO5_A.pdb', False),
+    ('../../data/out/dataset/native_pdb/6FHV_A.pdb', True),
+    ('../../data/out/dataset/native_pdb/5XLL_A.pdb', True),
+    ('../../data/out/dataset/native_pdb/6QP4_A.pdb', True),
+    ('../../data/out/dataset/native_pdb/6WWX_A.pdb', True),
 ])
 def test_judge_low_domain_interaction(input_pdb, expected, caplog):
     caplog.set_level(DEBUG)
@@ -104,6 +108,7 @@ def main():
     for target_id in df['id']:
         native_path = native_dir / f'{target_id}.pdb'
         if has_low_interaction_region(str(native_path)):
+            print(target_id)
             count += 1
     print(count)
 
