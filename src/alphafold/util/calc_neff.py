@@ -26,13 +26,14 @@ STRLIKE = Union[str, Path]
 
 class CalculateNeff:
     @staticmethod
-    def clstr_msa_by_cdhit(input_file: STRLIKE, output_file: STRLIKE, verbose: bool = False) -> None:
+    def clstr_msa_by_cdhit(input_file: STRLIKE, output_file: STRLIKE,
+                           verbose: bool = False, thread: int = 7) -> None:
         """
         Clustering MSA by cd-hit
         (cd-hit -i input_file -o output_file -c 0.62 -G 0 -n 3 -aS 0.9)
         """
         cmd = ['cd-hit', '-i', str(input_file), '-o', str(output_file),
-               '-c', '0.62', '-G', '0', '-n', '3', '-aS', '0.9']
+               '-c', '0.62', '-G', '0', '-n', '3', '-aS', '0.9', '-T', str(thread)]
         output = subprocess.run(cmd, capture_output=True, text=True).stdout
         if verbose:
             print(output)
@@ -61,7 +62,7 @@ class CalculateNeff:
             tmp_file = Path(tmpdir) / 'tmp.fasta'
             tmp_file.write_text('\n'.join(lines))
             clstr_output = tmp_file.with_suffix('.clstr')
-            cls.clstr_msa_by_cdhit(tmp_file, clstr_output, verbose=True)
+            cls.clstr_msa_by_cdhit(tmp_file, clstr_output)
             neff = cls.count_sequence_in_fasta(clstr_output)
             num_msa = cls.count_sequence_in_fasta(msa_file)
             assert neff <= num_msa
@@ -140,8 +141,8 @@ def main():
     result.to_csv(output_path)
 
 def test_sample_target():
-    # target = '6AN4_A'
-    target = '6EXU_A'
+    target = '6AN4_A'
+    # target = '6EXU_A'
     calc_neff_for_target(target)
 
 
