@@ -16,11 +16,58 @@ from typing import List
 
 import numpy as np
 import pandas as pd
-from prody import parsePDB, confProDy
+from prody import confProDy, parsePDB
 
 confProDy(verbosity='none')
 
 dataset_dir = Path('../../data/out/dataset').resolve()
+
+
+class checkSubmittedJob:
+    def __init__(self, method):
+        self.submitted_job_targets = self._get_submitted_job_targets(method)
+
+    @staticmethod
+    def _qstat(method) -> List[str]:
+        """Return job id list"""
+        cmd = ['qstat']
+        qstat_result = subprocess.run(cmd, capture_output=True, text=True).stdout
+        qstat_result_line = qstat_result.split('\n')[2: -1]
+        qstat_result_line_filter = list(filter(lambda line: method in line, qstat_result_line))
+        job_ids = [line.split()[0] for line in qstat_result_line_filter]
+        return job_ids
+
+    @staticmethod
+    def _stat_j(job_id: str) -> str:
+        """Return target_name"""
+        cmd = ['qstat', '-j', job_id]
+        qstat_j_result = subprocess.run(cmd, capture_output=True, text=True).stdout
+        qstat_j_result_line = qstat_j_result.split('\n')
+        job_name_line = list(filter(lambda x: x.startswith('job_name'), qstat_j_result_line))[0]
+        ar_id_line = list(filter(lambda x: x.startswith('ar_id'), qstat_j_result_line))
+        print(job_name_line, ar_id_line[0] if ar_id_line else '')
+        job_name = job_name_line.split()[1]
+        target_name = job_name.split('_', 1)[-1]  # Method_PDBID_chain
+        return target_name
+
+    @classmethod
+    def _get_submitted_job_targets(cls, method) -> List[str]:
+        """Return target name list"""
+        job_ids = cls._qstat(method)
+        target_names = [cls._stat_j(job_id) for job_id in job_ids]
+        return target_names
+
+    def check_submitted_jobs(self, target_name: str) -> bool:
+        """
+        Check whether the job of the target is submitted or not.
+
+        Args:
+        target_name (str): Name of the target.
+
+        Returns:
+            bool: Whether the job is submitted or not.
+        """
+        return target_name in self.submitted_job_targets
 
 
 def not_be_modeled(target_pdb_dir: Path) -> bool:
@@ -34,7 +81,8 @@ def not_be_modeled(target_pdb_dir: Path) -> bool:
     return np.isnan(coords).any()
 
 
-def throw_job(target_pdb_dir: Path, method: str, output_score_path: Path, qsub: bool, execute: bool):
+def throw_job(target_pdb_dir: Path, method: str, output_score_path: Path,
+              qsub: bool, execute: bool, ar: str) -> None:
     """
     Throw a job of the specified MQA method.
     """
@@ -44,7 +92,10 @@ def throw_job(target_pdb_dir: Path, method: str, output_score_path: Path, qsub: 
         fasta_path = dataset_dir / 'fasta' / f'{target}.fasta'
         cmd += [str(fasta_path), str(target)]
     if qsub:
-        cmd = ['qsub', '-g', 'tga-ishidalab', '-N', f'{method}_{target}'] + cmd
+        qsub_cmd = ['qsub', '-g', 'tga-ishidalab', '-N', f'{method}_{target}']
+        if ar is not None:
+            qsub_cmd += ['-ar', ar]
+        cmd = qsub_cmd + cmd
     print(' '.join(cmd))
     if execute:
         subprocess.run(cmd)
@@ -70,6 +121,7 @@ def main():
     parser.add_argument('-t', '--target_list_csv', type=str, required=True, help='target list csv')
     parser.add_argument('-q', '--qsub', action='store_true', help='throw job using qsub')
     parser.add_argument('-e', '--execute', action='store_true', help='execute the job')
+    parser.add_argument('-ar', type=str, help='id for reservation')
     args = parser.parse_args()
 
     method = args.method
@@ -98,6 +150,7 @@ def main():
     os.chdir(method)
     print('pwd:', os.getcwd())
     final_target_list = target_list.copy()
+    csj = checkSubmittedJob(method)
     for target in target_list:
         # pdb directory
         target_pdb_dir = alphafold_output_dir / target
@@ -114,9 +167,13 @@ def main():
         output_score_path = mqa_output_dir / f'{target}.csv'
         if output_score_path.exists():
             continue
+        # check if the job is submitted
+        if csj.check_submitted_jobs(target):
+            uncompleted_jobs += 1
+            continue
         # throw job
         uncompleted_jobs += 1
-        throw_job(target_pdb_dir, method, output_score_path, args.qsub, args.execute)
+        throw_job(target_pdb_dir, method, output_score_path, args.qsub, args.execute, args.ar)
     # If all jobs are completed, concatenate scores
     if uncompleted_jobs == 0:
         print('All jobs are completed. Concatenating scores...')
