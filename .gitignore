@@ -132,3 +132,5 @@ dmypy.json
 .vscode
 .DS_Store
 data/out/test
+data/raw/ecod/ecod.develop282.domains.txt
+data/raw/cath/cath-b-newest-all

@@ -16,5 +16,24 @@ if [ ! -e ${pdb_seqres} ]; then
     gzip -d pdb_seqres.txt.gz
 fi
 
+# download newest cath domain classification
+mkdir -p cath
+pushd cath
+cath_newest=cath-b-newest-all.gz
+if [ ! -e ${cath_newest} ]; then
+    wget http://download.cathdb.info/cath/releases/daily-release/newest/cath-b-newest-all.gz
+    gzip -d cath-b-newest-all.gz
+fi
+popd
+
+# download ecod domain definition (version 282, 2021-10-04)
+mkdir ecod
+pushd ecod
+ecod_domains=ecod.develop282.domains.txt
+if [ ! -e ${ecod_domains} ]; then
+    wget http://prodata.swmed.edu/ecod/distributions/${ecod_domains}
+fi
+popd
+
 # Finish
 popd
