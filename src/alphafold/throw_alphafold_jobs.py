@@ -127,7 +127,7 @@ class ThrowJob:
 
     @classmethod
     def throw_job(cls, row: pd.Series, fasta_dir: Path, output_dir: Path,
-                  method: str, qsub: bool, runall: bool = False):
+                  method: str, qsub: bool, ar: str, runall: bool = False):
         """throw a job to run alphafold or colabfold on a target
 
         Args:
@@ -161,6 +161,8 @@ class ThrowJob:
         resume: bool = len(list(output_target_dir.glob('*.pdb'))) > 100
         qsub_time = DetermineJobParams.estimate_time_from_length(length, ensemble, resume)
         qsub_header = ['qsub', '-g', 'tga-ishidalab', '-l', f'h_rt={qsub_time}', '-N', f'af_{entry_id}_{length}']
+        if ar is not None:
+            qsub_header += ['-ar', ar]
         if method == 'alphafold':
             max_template_date = get_max_template_date_from_releasedate(release_date)
             cmd = ['./alphafold.sh', str(fasta_path), str(output_target_dir), str(max_template_date)]
@@ -172,7 +174,8 @@ class ThrowJob:
             return
         cmd = qsub_header + cmd
         cls._throw_job_from_cmd(cmd, qsub)
-        if qsub and not resume:
+        msa_exist = (output_target_dir / 'msa.pickle').exists()
+        if qsub and not msa_exist:
             time.sleep(10 * 60)  # Wait some minutes after job submission to avoid overloading the MMseqs2 server
 
     @classmethod
@@ -241,6 +244,7 @@ def main():
     parser.add_argument('-q', '--qsub', action='store_true', help='Submit the job to the queue.')
     parser.add_argument('--runall', action='store_true',
                         help='Run command even for targets that have already been completed')
+    parser.add_argument('-ar', type=str, help='ar id')
     args = parser.parse_args()
 
     num_targets = args.num_targets
@@ -258,7 +262,7 @@ def main():
     num_targets = num_targets if num_targets > 0 else len(df)
     df = df[: num_targets]
     ThrowJob.throw_job_for_target_df(df, fasta_dir=fasta_dir, output_dir=output_alphafold_dir,
-                                     method=method, qsub=qsub, runall=runall)
+                                     method=method, qsub=qsub, runall=runall, ar=args.ar)
 
 
 if __name__ == '__main__':
