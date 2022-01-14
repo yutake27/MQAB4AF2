@@ -60,8 +60,10 @@ def get_target_subset(csv_path: Path, how: str = 'eq_random', exclude: bool = Fa
     elif how == 'eq_random':
         similar_df = df[df['is_similar_AF2'] == True]
         non_similar_df = df[df['is_similar_AF2'] == False]
-        similar_sample = sample_target_from_df(similar_df, target_num // 2, random_state=random_state)
-        non_similar_sample = sample_target_from_df(non_similar_df, target_num // 2, random_state=random_state)
+        similar_sample = sample_target_from_df(similar_df, target_num // 2, random_state=random_state,
+                                               exclude_protein_with_ll_and_low_contact=exclude)
+        non_similar_sample = sample_target_from_df(non_similar_df, target_num // 2, random_state=random_state,
+                                                   exclude_protein_with_ll_and_low_contact=exclude)
         df_sample = pd.concat([similar_sample, non_similar_sample])
     elif how == 'head':
         df_sample = df.head(n=target_num)
@@ -107,7 +109,8 @@ def main():
         output_csv_path = target_list_path.parent / (output_csv_stem + '.csv')
     else:
         output_csv_path = args.output_csv_path
-    df_sample = get_target_subset(input_csv_path, how=how, target_num=target_num, random_state=random_state)
+    df_sample = get_target_subset(input_csv_path, how=how, target_num=target_num,
+                                  random_state=random_state, exclude=args.exclude_target)
     df_sample.to_csv(output_csv_path)
 
 
