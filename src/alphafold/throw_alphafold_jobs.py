@@ -261,6 +261,7 @@ def main():
     df = pd.read_csv(target_list_path, index_col=0)
     num_targets = num_targets if num_targets > 0 else len(df)
     df = df[: num_targets]
+    df = df.sort_values('length', ascending=False)
     ThrowJob.throw_job_for_target_df(df, fasta_dir=fasta_dir, output_dir=output_alphafold_dir,
                                      method=method, qsub=qsub, runall=runall, ar=args.ar)
 
