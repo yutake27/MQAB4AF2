@@ -117,7 +117,7 @@ def concatenate_scores(mqa_output_dir: Path, target_list: List, subset_score_pat
 def main():
     parser = argparse.ArgumentParser(description='Throw MQA job')
     parser.add_argument('-m', '--method', type=str, required=True, help='MQA method name',
-                        choices=['DOPE', 'ProQ3D', 'SBROD', 'P3CMQA', 'DeepAccNet', 'VoroCNN'])
+                        choices=['DOPE', 'ProQ3D', 'SBROD', 'Sato-3DCNN', 'P3CMQA', 'DeepAccNet', 'VoroCNN'])
     parser.add_argument('-t', '--target_list_csv', type=str, required=True, help='target list csv')
     parser.add_argument('-q', '--qsub', action='store_true', help='throw job using qsub')
     parser.add_argument('-e', '--execute', action='store_true', help='execute the job')
