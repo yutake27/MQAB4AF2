@@ -109,7 +109,7 @@ def main():
             target_result_df = main_target(target, missing_indices, length)
             results.append(target_result_df)
     result_df = pd.concat(results)
-    output_score_path = data_dir / 'out' / 'score' / 'subsets' / dataset_name / 'af2_confidence_resolved.csv.gz'
+    output_score_path = data_dir / 'out/dataset/score/subsets' / dataset_name / 'af2_confidence_resolved.csv.gz'
     result_df.to_csv(output_score_path)
 
 
