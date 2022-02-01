@@ -13,7 +13,7 @@ native_dir = Path('../../data/out/dataset/native_pdb')
 def get_missing_residues(target: str, length: int) -> list:
     native_path = native_dir / f'{target}.pdb'
     mol = parsePDB(str(native_path)).select('name CA')
-    resolved_indices = mol.getResindices()
+    resolved_indices = mol.getResnums() - 1
     all_indices = np.arange(length)
     missing_indices = list(np.setdiff1d(all_indices, resolved_indices))
     return missing_indices
