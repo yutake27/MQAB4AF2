@@ -9,6 +9,8 @@ MQA methods:
 """
 
 import argparse
+import os
+import subprocess
 import tarfile
 from pathlib import Path
 from typing import Any, List, Union
@@ -42,12 +44,15 @@ class CalcResolvedConfidence:
                 length = row['length']
                 result = self.for_target(target, length)
                 results.append(result)
+        if sum([1 if result is None else 0 for result in results]) > 0:
+            print(f'{self.method} calculation not yet finished')
+            exit()
         return pd.concat(results)
 
-    def for_target(self, target: str, length: int) -> pd.DataFrame:
+    def for_target(self, target: str, length: int) -> Union[pd.DataFrame, None]:
         resolved_indices = self.get_resolved_indices(target, length)
         if self.method == 'DeepAccNet' or self.method == 'DeepAccNet-Bert':
-            result = self.DeepAccNet(target, resolved_indices)
+            result = self.DeepAccNet(target, length)
         elif self.method == 'P3CMQA' or self.method == 'Sato-3DCNN':
             result = self.P3CMQA(target, resolved_indices)
         elif self.method == 'ProQ3D':
@@ -62,20 +67,20 @@ class CalcResolvedConfidence:
     def get_resolved_indices(cls, target: str, length: int) -> List[int]:
         return np.setdiff1d(np.arange(length), cls.missing_dict[target])
 
-    def DeepAccNet(self, target: str, resolved_indices: List[int]) -> pd.DataFrame:
+    def DeepAccNet(self, target: str, length: int) -> Union[pd.DataFrame, None]:
         deepaccnet_path = score_dir / 'DeepAccNet'
-        tar_path = deepaccnet_path / target / f'{self.method}.tar.gz'
-        tar = open_tar(tar_path)
-        results = []
-        for tarinfo in tar:
-            if tarinfo.name.endswith('.npz'):
-                f = tar.extractfile(tarinfo.name)
-                npz = np.load(f)
-                resolved_score = np.mean(npz['lddt'][resolved_indices])
-                results.append([Path(tarinfo.name).stem, resolved_score])
-        result_df = pd.DataFrame(results, columns=['Model', f'{self.method}_resolved'])
-        result_df['Target'] = target
-        return result_df
+        result_path = deepaccnet_path / f'{target}_resolved.csv'
+        # if calculation already finished
+        if result_path.exists():
+            result_df = pd.read_csv(result_path, index_col=0)
+            return result_df
+        # if calculation not yet finished
+        os.chdir('DeepAccNet')
+        cmd = ['qsub', '-g', 'tga-ishidalab', './get_score_resolved.sh', target, str(length)]
+        print(' '.join(cmd))
+        # subprocess.run(cmd)
+        os.chdir('..')
+        return None
 
     def P3CMQA(self, target: str, resolved_indices: List[int]) -> pd.DataFrame:
         p3cmqa_path = score_dir / self.method
