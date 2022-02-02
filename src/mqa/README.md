@@ -43,4 +43,23 @@ python throw_mqa.py -m method -t target_subset_list.csv --qsub --execute
 If execution for all targets are completed, all scores are concatenated.
 
 
-## Evaluation
+## Calculate MQA scores only for resolved residues
+
+For MQA methods (except pLDDT and pTM)
+```bash
+$ python calc_score_resolved_region.py --help
+usage: calc_score_resolved_region.py [-h] target_csv method
+
+positional arguments:
+  target_csv  Path to target csv file
+  method      Method name
+
+optional arguments:
+  -h, --help  show this help message and exit
+```
+
+For pLDDT and pTM,
+```bash
+$ cd ../alphafold/util
+$ ../alphafold/colabfold-conda/bin/python3.7 calc_confidence_resolved_region.py target_csv_path
+```
