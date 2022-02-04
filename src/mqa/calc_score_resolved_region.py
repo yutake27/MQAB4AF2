@@ -77,8 +77,7 @@ class CalcResolvedConfidence:
         # if calculation not yet finished
         os.chdir('DeepAccNet')
         cmd = ['qsub', '-g', 'tga-ishidalab', './get_score_resolved.sh', target, str(length)]
-        print(' '.join(cmd))
-        # subprocess.run(cmd)
+        subprocess.run(cmd)
         os.chdir('..')
         return None
 
