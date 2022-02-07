@@ -17,6 +17,7 @@ from typing import Any, List, Union
 
 import numpy as np
 import pandas as pd
+from prody import parsePDB, writePDB
 from tqdm import tqdm
 
 data_dir = Path('../../data')
@@ -27,6 +28,23 @@ score_dir = data_dir / 'out/dataset/score/mqa'
 def open_tar(tar_file: Union[str, Path]) -> tarfile.TarFile:
     return tarfile.open(tar_file, 'r:gz')
 
+
+def get_resolved_pdb(target: str, resolved_indices: List[int]) -> Path:
+    target_pdb_dir = data_dir / 'out/dataset/alphafold_output' / target
+    pdb_resolved_dir = data_dir / 'out/dataset/pdb/pdb_resolved'
+    pdb_resolved_target_dir = pdb_resolved_dir / target
+    pdb_resolved_target_dir.mkdir(parents=True, exist_ok=True)
+    for pdb in target_pdb_dir.glob('*.pdb'):
+        pdb_name = pdb.stem
+        output_pdb_path = pdb_resolved_target_dir / f'{pdb_name}.pdb'
+        if output_pdb_path.exists():
+            continue
+        mol = parsePDB(pdb)
+        resindices = mol.getResnums() - 1
+        resolved_atom_indices = np.where(np.isin(resindices, resolved_indices))[0]
+        mol_resolved = mol[resolved_atom_indices]
+        writePDB(str(output_pdb_path), mol_resolved)
+    return pdb_resolved_target_dir
 
 class CalcResolvedConfidence:
     missing_dict = np.load(interim_path / 'missing_residues.npy', allow_pickle=True).item()
@@ -59,6 +77,10 @@ class CalcResolvedConfidence:
             result = self.ProQ3D(target, resolved_indices)
         elif self.method == 'VoroCNN':
             result = self.VoroCNN(target, resolved_indices)
+        elif self.method == 'DOPE':
+            result = self.DOPE(target, resolved_indices)
+        elif self.method == 'SBROD':
+            result = self.SBROD(target, resolved_indices)
         else:
             raise ValueError(f'Unknown method: {self.method}')
         return result
@@ -128,6 +150,37 @@ class CalcResolvedConfidence:
         result_df = pd.DataFrame(results, columns=['Model', f'{self.method}_resolved'])
         result_df['Target'] = target
         return result_df
+
+    def DOPE(self, target: str, resolved_indices: List[int]) -> Union[pd.DataFrame, None]:
+        dope_path = score_dir / 'DOPE'
+        result_path = (dope_path / f'{target}_resolved.csv').resolve()
+        # if calculation already finished
+        if result_path.exists():
+            result_df = pd.read_csv(result_path, index_col=0)
+            result_df['Target'] = target
+            return result_df
+        # if calculation not yet finished
+        resolved_pdb_dir = get_resolved_pdb(target, resolved_indices).resolve()
+        os.chdir('DOPE')
+        cmd = ['qsub', '-g', 'tga-ishidalab', './DOPE.sh', str(resolved_pdb_dir), str(result_path)]
+        subprocess.run(cmd)
+        os.chdir('..')
+        return None
+
+    def SBROD(self, target: str, resolved_indices: List[int]) -> Union[pd.DataFrame, None]:
+        sbrod_path = score_dir / 'SBROD'
+        result_path = (sbrod_path / f'{target}_resolved.csv').resolve()
+        # if calculation already finished
+        if result_path.exists():
+            result_df = pd.read_csv(result_path, index_col=0)
+            result_df['Target'] = target
+            return result_df
+        # if calculation not yet finished
+        resolved_pdb_dir = get_resolved_pdb(target, resolved_indices).resolve()
+        os.chdir('SBROD')
+        cmd = ['qsub', '-g', 'tga-ishidalab', './SBROD.sh', str(resolved_pdb_dir), str(result_path)]
+        subprocess.run(cmd)
+        os.chdir('..')
 
 
 def main():
