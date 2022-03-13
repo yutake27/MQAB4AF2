@@ -129,10 +129,11 @@ def main():
     output_tar_pdb_path = compress_pdb(target_df, output_dir)
 
     # compress other files
-    output_tar_filename = 'af2_500_targets.tar.gz'
+    output_dataset_name = 'af2_500_targets'
+    output_tar_filename = f'{output_dataset_name}.tar.gz'
     output_tar_path = output_dir / output_tar_filename
     with tarfile.open(output_tar_path, 'w:gz') as tf:
-        arcdir = output_tar_filename
+        arcdir = output_dataset_name
         # add pdb tar file
         tf.add(output_tar_pdb_path, arcname=f'{arcdir}/pdb.tar.gz')
         # add native_pdb
