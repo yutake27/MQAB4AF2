@@ -1,8 +1,9 @@
 # MQAB4AF2
 
-MQA benchmarking for structures of AlphaFold2
+Model Quality Assessment benchmarking for AlphaFold2 structures
 
-## Requirement
+## Dataset generation
+### Requirement
 
 ```txt
 python=3.9.2
@@ -15,3 +16,24 @@ joblib=1.1.0
 dssp=3.0.0
 pytest=6.2.5
 ```
+
+### Procedure
+1. [Target selection](./src/data/README.md)
+2. [Run AlphaFold2](./src/alphafold/README.md)
+3. [Optional] [Run MQA methods](./src/mqa/README.md)
+
+## Download dataset
+You can download AlphaFold2 structure data for 500 protein sequences from http://www.cb.cs.titech.ac.jp/af2/af2_500_targets.tar.gz (5.8GB).
+
+
+## Reference
+Yuma Takei and Takashi Ishida, in preparation, 2022.
+
+
+## Acknowledgement
+[AlphaFold](https://github.com/deepmind/alphafold), [ColabFold](https://github.com/sokrypton/ColabFold), and [LocalColabFold](https://github.com/YoshitakaMo/localcolabfold) were used to generate the predictive structure.
+
+- Mirdita M, Schütze K, Moriwaki Y, Heo L, Ovchinnikov S and Steinegger M. ColabFold - Making protein folding accessible to all. <br />
+  bioRxiv (2021) doi: [10.1101/2021.08.15.456425](https://www.biorxiv.org/content/10.1101/2021.08.15.456425v2)
+- Jumper et al. "Highly accurate protein structure prediction with AlphaFold." <br />
+  Nature (2021) doi: [10.1038/s41586-021-03819-2](https://doi.org/10.1038/s41586-021-03819-2)
