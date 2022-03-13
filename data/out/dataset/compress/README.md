@@ -27,24 +27,24 @@ This dataset is licensed under CC BY 4.0. (https://creativecommons.org/licenses/
 
 ## File details
 
-* fasta
+- fasta
 
     Target protein sequence in fasta format
 
-* native_pdb
+- native_pdb
 
     Native structure in pdb format
 
-* pdb
+- pdb
 
     Predicted structures for each target in pdb format
 
-* score
+- score
 
-    * all_score.csv
+    - all_score.csv
 
         csv file containing all scores such as labels for each predicted structure
 
-    * target_list.csv
+    - target_list.csv
 
         csv file containing target information such as resolution, sequence length, and domain number.
