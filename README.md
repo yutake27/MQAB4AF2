@@ -31,9 +31,12 @@ Yuma Takei and Takashi Ishida, in preparation, 2022.
 
 
 ## Acknowledgement
-[AlphaFold](https://github.com/deepmind/alphafold), [ColabFold](https://github.com/sokrypton/ColabFold), and [LocalColabFold](https://github.com/YoshitakaMo/localcolabfold) were used to generate the predictive structure.
+[AlphaFold](https://github.com/deepmind/alphafold) v2.0.1, [ColabFold](https://github.com/sokrypton/ColabFold), and [LocalColabFold](https://github.com/YoshitakaMo/localcolabfold) v1.0.0 were used to predict structures.
 
-- Mirdita M, Schütze K, Moriwaki Y, Heo L, Ovchinnikov S and Steinegger M. ColabFold - Making protein folding accessible to all. <br />
+- Jumper J, Evans R, Pritzel A, Green T, Figurnov M, Ronneberger O, Tunyasuvunakool K, Bates R, Žídek A, Potapenko A and Bridgland A. "Highly accurate protein structure prediction with AlphaFold."<br />
+  Nature. 2021 Aug;596(7873):583-9. doi: [10.1038/s41586-021-03819-2](https://doi.org/10.1038/s41586-021-03819-2)
+
+- Mirdita M, Schütze K, Moriwaki Y, Heo L, Ovchinnikov S and Steinegger M. "ColabFold - Making protein folding accessible to all." <br />
   bioRxiv (2021) doi: [10.1101/2021.08.15.456425](https://www.biorxiv.org/content/10.1101/2021.08.15.456425v2)
-- Jumper et al. "Highly accurate protein structure prediction with AlphaFold." <br />
-  Nature (2021) doi: [10.1038/s41586-021-03819-2](https://doi.org/10.1038/s41586-021-03819-2)
+
+- Moriwaki Y. "LocalColabFold" Available from: https://github.com/YoshitakaMo/localcolabfold.
