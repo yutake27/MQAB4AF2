@@ -1,6 +1,8 @@
 # MQAB4AF2
 
-Model Quality Assessment benchmarking for AlphaFold2 structures
+Model Quality Assessment (Estimation of Model Accuracy) benchmarking for AlphaFold2 structures
+
+![sample_structure](./figure/sample_structures.png)
 
 ## Dataset generation
 ### Requirement
