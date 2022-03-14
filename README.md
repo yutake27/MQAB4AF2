@@ -26,7 +26,6 @@ pytest=6.2.5
 
 ## Download dataset
 You can download AlphaFold2 structure data for 500 protein sequences from [http://www.cb.cs.titech.ac.jp/af2/af2_500_targets.tar.gz](http://www.cb.cs.titech.ac.jp/af2/af2_500_targets.tar.gz) (5.8GB).
-http://www.cb.cs.titech.ac.jp/af2/af2_500_targets.tar.gz
 
 The dataset includes protein target sequences, native and predicted structures of the targets, and labels.
 For more information, see [here](./data/out/dataset/compress/README.md).
