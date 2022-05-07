@@ -31,7 +31,7 @@ The dataset includes protein target sequences, native and predicted structures o
 For more information, see [here](./data/out/dataset/compress/README.md).
 
 ## Reference
-Yuma Takei and Takashi Ishida, in preparation, 2022.
+Yuma Takei and Takashi Ishida, "How to select the best model from AlphaFold2 structures?", bioRxiv, 2022. Available from https://doi.org/10.1101/2022.04.05.487218. (Supporting information is available [here](./data/paper/S1_File.pdf).)
 
 
 ## Acknowledgement
